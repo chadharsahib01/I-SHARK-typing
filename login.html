@@ -49,6 +49,13 @@
         </div>
         
         <div id="status-msg" class="mt-6 text-[10px] font-bold uppercase tracking-widest hidden"></div>
+
+        <footer class="mt-12 pt-8 border-t border-slate-50">
+            <p class="text-[8px] font-bold uppercase tracking-widest text-slate-400">
+                Engineered by Ali Raza Chadahar <br>
+                Director @ I-SHARK Institute
+            </p>
+        </footer>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -58,9 +65,7 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YmplempxamlrbG9xZ2Z2dXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODk4MDUsImV4cCI6MjA5MDQ2NTgwNX0.lj0Oumu8e63Q81bxvZ57-ALGaAP6IfIfCDBkqwXyvxM'
         );
 
-        const emailInp = document.getElementById('email');
-        const passInp = document.getElementById('password');
-        const statusMsg = document.getElementById('status-msg');
+        const emailInp = document.getElementById('email'), passInp = document.getElementById('password'), statusMsg = document.getElementById('status-msg');
 
         function showStatus(text, isError = true) {
             statusMsg.innerText = text;
@@ -70,21 +75,14 @@
 
         document.getElementById('login-btn').onclick = async () => {
             statusMsg.classList.add('hidden');
-            const { data, error } = await _supabase.auth.signInWithPassword({
-                email: emailInp.value,
-                password: passInp.value
-            });
+            const { data, error } = await _supabase.auth.signInWithPassword({ email: emailInp.value, password: passInp.value });
             if (error) return showStatus(error.message);
-            
             showStatus("Access Granted. Redirecting...", false);
             setTimeout(() => window.location.href = 'index.html', 1000);
         };
 
         document.getElementById('signup-btn').onclick = async () => {
-            const { data, error } = await _supabase.auth.signUp({
-                email: emailInp.value,
-                password: passInp.value
-            });
+            const { data, error } = await _supabase.auth.signUp({ email: emailInp.value, password: passInp.value });
             if (error) return showStatus(error.message);
             showStatus("Pilot Account Created. Please Authenticate.", false);
         };

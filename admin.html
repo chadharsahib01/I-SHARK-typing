@@ -18,7 +18,9 @@
         <header class="flex justify-between items-center mb-12">
             <div>
                 <h1 class="font-headline font-black text-3xl text-[#00113a] uppercase tracking-tighter">Master Console</h1>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Global Student Telemetry</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    Developed by Ali Raza Chadahar | I-SHARK Intelligence
+                </p>
             </div>
             <a href="index.html" class="bg-white px-6 py-3 rounded-xl font-bold text-xs uppercase shadow-sm hover:shadow-md transition-all">Back to Arena</a>
         </header>
@@ -35,8 +37,7 @@
                         <th class="p-6 text-center">Control</th>
                     </tr>
                 </thead>
-                <tbody id="master-table-body" class="divide-y divide-slate-50">
-                    </tbody>
+                <tbody id="master-table-body" class="divide-y divide-slate-50"></tbody>
             </table>
         </div>
     </div>
@@ -48,37 +49,23 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YmplempxamlrbG9xZ2Z2dXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODk4MDUsImV4cCI6MjA5MDQ2NTgwNX0.lj0Oumu8e63Q81bxvZ57-ALGaAP6IfIfCDBkqwXyvxM'
         );
 
-        // DELETE FUNCTION: Removes a record from the cloud and refreshes the table
         async function deleteRecord(id) {
-            if (!confirm("ARE YOU SURE? This pilot's record will be permanently erased from the I-SHARK cloud.")) return;
-
-            const { error } = await _supabase
-                .from('typing_results')
-                .delete()
-                .eq('id', id); // We use the unique 'id' column created by Supabase
-
-            if (error) {
-                alert("Execution Failed: " + error.message);
-            } else {
-                fetchAllData(); // Refresh the table automatically
-            }
+            if (!confirm("ERASE RECORD? This flight data will be permanently removed from the cloud.")) return;
+            const { error } = await _supabase.from('typing_results').delete().eq('id', id);
+            if (error) alert("Execution Failed: " + error.message);
+            else fetchAllData();
         }
 
         async function fetchAllData() {
             const { data: { user } } = await _supabase.auth.getUser();
             if (!user || user.email !== 'hacker.chadhar@gmail.com') {
-                alert("Unauthorized Access Detected.");
+                alert("Unauthorized Access.");
                 window.location.href = 'index.html';
                 return;
             }
 
-            const { data, error } = await _supabase
-                .from('typing_results')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) { console.error(error); return; }
-
+            const { data, error } = await _supabase.from('typing_results').select('*').order('created_at', { ascending: false });
+            if (error) return;
             const tbody = document.getElementById('master-table-body');
             tbody.innerHTML = data.map(row => `
                 <tr class="hover:bg-slate-50 transition-colors">
