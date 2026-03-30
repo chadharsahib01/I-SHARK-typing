@@ -201,6 +201,21 @@
             lessonElement.innerText = modulesCompleted;
         }
 
+
+async function checkAuth() {
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) {
+        // No pilot found. Redirect to login.
+        window.location.href = 'login.html';
+    } else {
+        // Pilot found. Update the UI.
+        currentUser = user;
+        document.querySelector('.font-headline.uppercase.tracking-widest').innerText = user.email.split('@')[0];
+    }
+}
+checkAuth();
+
+
         // Phase 18: Fetch Leaderboard Logic
         async function fetchLeaderboard() {
             try {
