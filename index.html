@@ -4,9 +4,19 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>I-SHARK Kinetic | Performance Command</title>
+
+    <!-- 1. EXTERNAL LIBRARIES -->
+    <!-- Tailwind CSS: Handles all layout and responsive design without writing custom CSS files -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- Google Fonts: Space Grotesk for headings (modern/tech) and Inter for body text (readability) -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+    
+    <!-- Material Symbols: Google's icon library used for navigation and status indicators -->
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+    <!-- 2. TAILWIND CONFIGURATION -->
+    <!-- Customizes the color palette to match the "I-SHARK" brand (Navy Blue/Deep Space theme) -->
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -24,8 +34,6 @@
                         "surface-container-highest": "#e0e3e5",
                         "tertiary-fixed": "#7afbb1",
                         "tertiary-container": "#003019",
-                        "error-container": "#ffdad6",
-                        "on-error-container": "#93000a",
                     },
                     fontFamily: {
                         "headline": ["Space Grotesk"],
@@ -36,233 +44,252 @@
             },
         }
     </script>
+
+    <!-- 3. CUSTOM ENGINE STYLES -->
     <style>
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        
+        /* The signature I-SHARK gradient used for primary actions */
         .kinetic-gradient { background: linear-gradient(135deg, #00113a 0%, #002366 100%); }
+        
+        /* Ambient Shadow: Adds depth to cards without being heavy or distracting */
         .ambient-shadow { box-shadow: 0 20px 40px rgba(0, 17, 58, 0.06); }
+        
+        /* Glass Header: Subtle blur effect that keeps navigation visible while scrolling */
         .glass-header { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); }
+        
+        /* Typing Logic: Defines how "correct" and "incorrect" letters look in real-time */
         #typing-container span { border-left: 2px solid transparent; padding: 0 1px; transition: color 0.1s; }
         .correct { color: #00113a !important; font-weight: 500; }
         .incorrect { color: #93000a !important; background-color: #ffdad6; border-radius: 2px; }
+        
+        /* Cursor Blink: Simulates a classic terminal cursor on the target character */
         @keyframes blink { 0%, 100% { border-left-color: #00113a; } 50% { border-left-color: transparent; } }
         .current-target { border-left: 2px solid #00113a !important; animation: blink 1s step-end infinite; color: #00113a !important; }
+        
+        /* Timer Warning: Pulses red when the user has less than 10 seconds left */
         .timer-warning { color: #ba1a1a !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body class="bg-surface text-on-surface font-body overflow-x-hidden">
 
+    <!-- 4. SIDEBAR (Command Navigation) -->
     <aside class="h-screen w-64 fixed left-0 top-0 z-40 bg-white flex flex-col p-6 gap-4 font-headline border-r border-slate-100">
+        <!-- Brand Identity -->
         <div class="mb-10 flex items-center gap-3">
             <div class="w-10 h-10 kinetic-gradient rounded-lg flex items-center justify-center">
                 <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">tsunami</span>
             </div>
             <span class="text-xl font-black italic tracking-tighter text-primary">I-SHARK</span>
         </div>
+
+        <!-- Navigation Links -->
         <nav class="flex flex-col gap-2">
-            <div class="text-secondary hover:bg-surface-container-low rounded-lg flex items-center gap-3 p-3 transition-all cursor-pointer">
-                <span class="material-symbols-outlined">dashboard</span>
-                <span class="text-sm font-bold">Dashboard</span>
-            </div>
             <div class="bg-primary text-white shadow-lg shadow-primary/20 rounded-lg flex items-center gap-3 p-3 transition-all cursor-pointer">
                 <span class="material-symbols-outlined">keyboard</span>
                 <span class="text-sm font-bold">Practice Arena</span>
             </div>
         </nav>
+
+        <!-- Dynamic Sidebar Footer -->
         <div class="mt-auto flex flex-col gap-2">
+            <!-- Lifetime Record: Persisted via LocalStorage -->
             <div class="p-4 bg-surface-container-low rounded-xl">
-                <p class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Lifetime Best</p>
+                <p class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Personal Best</p>
                 <p class="text-2xl font-headline font-black text-primary"><span id="sidebar-best-wpm">0</span> <span class="text-xs font-medium">WPM</span></p>
             </div>
-            <!-- Logout Button -->
+            
+            <!-- Admin Gateway: ONLY visible if the logged-in email is yours -->
+            <div id="admin-gate" class="hidden border-t border-slate-100 mt-2 pt-2">
+                <a href="admin.html" class="flex items-center gap-3 p-3 w-full text-primary hover:bg-slate-100 rounded-lg transition-all">
+                    <span class="material-symbols-outlined">analytics</span>
+                    <span class="text-sm font-bold uppercase tracking-widest">Master Console</span>
+                </a>
+            </div>
+
+            <!-- Auth Controls -->
             <button id="logout-btn" class="flex items-center gap-3 p-3 w-full text-red-400 hover:bg-red-50 rounded-lg transition-all">
                 <span class="material-symbols-outlined">logout</span>
                 <span class="text-sm font-bold uppercase tracking-widest">Sign Out</span>
             </button>
-            <button id="reset-memory-btn" class="text-[9px] text-slate-300 hover:text-red-400 font-bold uppercase tracking-tighter text-left px-3">Wipe Local Cache</button>
         </div>
     </aside>
 
+    <!-- 5. MAIN CONTENT AREA -->
     <main class="ml-64 min-h-screen">
+        <!-- Header: Identifies the Pilot and displays their avatar -->
         <header class="sticky top-0 z-30 glass-header h-20 flex justify-between items-center px-12 border-b border-slate-100">
             <h1 class="font-headline font-bold text-xl text-primary uppercase tracking-widest">Pilot: <span id="pilot-name">Scanning...</span></h1>
-            <div class="flex items-center gap-6">
-                <div class="flex items-center gap-1.5 px-4 py-1.5 bg-tertiary-fixed rounded-full">
-                    <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
-                    <span class="text-[10px] font-black font-headline uppercase">Live Connection</span>
-                </div>
-                <div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
-                    <img id="pilot-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User"/>
-                </div>
+            <div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden ring-2 ring-primary/5">
+                <img id="pilot-avatar" src="" alt="Avatar"/>
             </div>
         </header>
 
         <div class="p-12 max-w-5xl mx-auto space-y-8">
-            <div class="flex justify-between items-center bg-white p-4 rounded-2xl ambient-shadow">
-                <div class="flex gap-2 bg-surface-container-low p-1 rounded-xl">
-                    <button class="mode-btn active px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all" data-mode="standard">Standard</button>
-                    <button class="mode-btn px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-secondary" data-mode="data-entry">Data Entry</button>
-                </div>
-                <div class="flex gap-2">
-                    <button class="time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 hover:bg-slate-50 transition-all" data-time="15">15s</button>
-                    <button class="time-btn active px-4 py-2 rounded-lg text-xs font-bold kinetic-gradient text-white shadow-md shadow-primary/20 transition-all" data-time="30">30s</button>
-                    <button class="time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 hover:bg-slate-50 transition-all" data-time="60">60s</button>
-                </div>
-            </div>
-
+            <!-- Statistics Cluster: Real-time telemetry during a test -->
             <div class="grid grid-cols-4 gap-6">
-                <div class="bg-white p-6 rounded-2xl ambient-shadow flex flex-col items-center">
+                <div class="bg-white p-6 rounded-2xl ambient-shadow flex flex-col items-center border border-slate-50">
                     <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Timer</span>
                     <span id="time-log" class="text-4xl font-headline font-black text-primary tabular-nums">30</span>
                 </div>
-                <div class="bg-white p-6 rounded-2xl ambient-shadow flex flex-col items-center">
+                <div class="bg-white p-6 rounded-2xl ambient-shadow flex flex-col items-center border border-slate-50">
                     <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Accuracy</span>
                     <span id="accuracy-log" class="text-4xl font-headline font-black text-primary tabular-nums">100%</span>
                 </div>
-                <div class="bg-white p-6 rounded-2xl ambient-shadow flex flex-col items-center">
-                    <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Live WPM</span>
+                <div class="bg-white p-6 rounded-2xl ambient-shadow flex flex-col items-center border border-slate-50">
+                    <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Live Speed</span>
                     <span id="wpm-log" class="text-4xl font-headline font-black text-primary tabular-nums">0</span>
                 </div>
-                <div class="bg-white p-6 rounded-2xl ambient-shadow flex flex-col items-center">
-                    <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Modules</span>
-                    <span id="lesson-log" class="text-4xl font-headline font-black text-primary tabular-nums">0</span>
+                <div class="bg-white p-6 rounded-2xl ambient-shadow flex flex-col items-center border border-slate-50">
+                    <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Session Avg</span>
+                    <span id="session-avg-acc" class="text-4xl font-headline font-black text-primary tabular-nums">--%</span>
                 </div>
             </div>
 
-            <div class="bg-white p-8 rounded-3xl ambient-shadow border border-slate-50">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-headline font-bold text-lg text-primary uppercase tracking-widest">Global Leaderboard</h3>
-                    <button onclick="fetchLeaderboard()" class="text-secondary hover:text-primary transition-all flex items-center gap-2">
-                        <span class="text-[10px] font-bold uppercase tracking-widest">Refresh</span>
-                        <span class="material-symbols-outlined text-sm">refresh</span>
-                    </button>
+            <!-- Layout Split: Control/Engine on left, Personal Log on right -->
+            <div class="grid grid-cols-3 gap-8">
+                <div class="col-span-2 space-y-6">
+                    <!-- Config Bar: Mode and Duration selectors -->
+                    <div class="flex justify-between items-center bg-white p-4 rounded-2xl ambient-shadow border border-slate-50">
+                        <div class="flex gap-2 bg-surface-container-low p-1 rounded-xl">
+                            <button class="mode-btn active px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all" data-mode="standard">Standard</button>
+                            <button class="mode-btn px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-secondary" data-mode="data-entry">Data Entry</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 hover:bg-slate-50 transition-all" data-time="15">15s</button>
+                            <button class="time-btn active px-4 py-2 rounded-lg text-xs font-bold kinetic-gradient text-white shadow-md shadow-primary/20 transition-all" data-time="30">30s</button>
+                            <button class="time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 hover:bg-slate-50 transition-all" data-time="60">60s</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Typing Interface: Where the kinetic text engine renders -->
+                    <div id="typing-container" class="w-full bg-white/80 backdrop-blur-xl rounded-[2rem] p-10 ambient-shadow border border-white min-h-[220px] text-2xl font-mono leading-[1.8] text-slate-300 select-none overflow-hidden italic"></div>
                 </div>
-                <div id="leaderboard-list" class="space-y-4">
-                    <p class="text-xs italic text-secondary">Synchronizing rankings...</p>
-                </div>
-            </div>
 
-            <div class="relative">
-                <div id="typing-container" class="w-full bg-white/60 backdrop-blur-xl rounded-3xl p-12 ambient-shadow border border-white/40 min-h-[220px] text-2xl font-mono leading-[1.8] text-slate-400 select-none overflow-hidden">
+                <!-- Personal Career Log: Lists the Pilot's last 5 flights from Supabase -->
+                <div class="col-span-1">
+                    <div class="bg-primary p-8 rounded-[2rem] ambient-shadow border border-white/10 text-white h-full">
+                        <h3 class="font-headline font-bold text-sm uppercase tracking-[0.2em] text-tertiary-fixed mb-8">Career Log</h3>
+                        <div id="personal-log-list" class="space-y-6 text-white/80">
+                            <p class="text-[10px] font-bold uppercase opacity-40 tracking-widest italic">Scanning logs...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
+    <!-- 6. SESSION RESULTS MODAL -->
     <div id="modal-overlay" class="fixed inset-0 z-[100] hidden items-center justify-center bg-primary/40 backdrop-blur-md">
-        <div class="bg-white rounded-[2rem] p-12 text-center ambient-shadow max-w-sm w-full mx-6">
+        <div class="bg-white rounded-[2rem] p-12 text-center ambient-shadow max-w-sm w-full mx-6 border border-slate-100">
             <h2 class="font-headline font-black text-3xl text-primary mb-2">Syncing Data...</h2>
-            <div id="sync-status" class="text-xs font-bold text-secondary uppercase tracking-widest mb-6 italic">Connecting to I-SHARK Cloud</div>
+            <div id="sync-status" class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-8">Connecting to I-SHARK Cloud</div>
             
-            <div class="space-y-4 mb-10">
-                <div class="flex justify-between items-center border-b border-slate-50 pb-2">
-                    <span class="text-xs font-bold text-secondary uppercase">Velocity</span>
-                    <span class="text-xl font-mono font-black text-primary"><span id="final-wpm">0</span> WPM</span>
+            <div class="grid grid-cols-2 gap-4 mb-10">
+                <div class="bg-surface-container-low p-4 rounded-2xl text-center">
+                    <p class="text-[9px] font-bold text-secondary uppercase mb-1">Velocity</p>
+                    <p class="text-2xl font-headline font-black text-primary"><span id="final-wpm">0</span></p>
                 </div>
-                <div class="flex justify-between items-center border-b border-slate-50 pb-2">
-                    <span class="text-xs font-bold text-secondary uppercase">Precision</span>
-                    <span class="text-xl font-mono font-black text-primary"><span id="final-accuracy">0</span>%</span>
+                <div class="bg-surface-container-low p-4 rounded-2xl text-center">
+                    <p class="text-[9px] font-bold text-secondary uppercase mb-1">Precision</p>
+                    <p class="text-2xl font-headline font-black text-primary"><span id="final-accuracy">0</span>%</p>
                 </div>
             </div>
-
-            <div class="flex flex-col gap-3">
-                <button id="modal-next-btn" class="w-full kinetic-gradient text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 active:scale-95 transition-all">Next Module</button>
-                <button id="modal-restart-btn" class="w-full bg-surface-container-highest text-primary py-4 rounded-xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all">Try Again (Tab)</button>
-            </div>
+            
+            <button id="modal-restart-btn" class="w-full kinetic-gradient text-white py-5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-primary/20 transition-all">Next Flight (Tab)</button>
         </div>
     </div>
 
+    <!-- 7. CORE SYSTEM SCRIPT (The Brain) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // Supabase Initialization: Handshake with your Cloud Database
         const _supabase = supabase.createClient(
             'https://atbjezjqjikloqgfvurz.supabase.co', 
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YmplempxamlrbG9xZ2Z2dXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODk4MDUsImV4cCI6MjA5MDQ2NTgwNX0.lj0Oumu8e63Q81bxvZ57-ALGaAP6IfIfCDBkqwXyvxM'
         );
 
         let currentUser = null;
+        let bestWPM = parseInt(localStorage.getItem('ishark_best_wpm')) || 0;
 
+        // Auth Guard: Kicks anyone not logged in back to the login page
         async function checkAuth() {
             const { data: { user } } = await _supabase.auth.getUser();
             if (!user) {
                 window.location.href = 'login.html';
             } else {
                 currentUser = user;
+                // UI Personalization: Extracts name from email and fetches avatar
                 document.getElementById('pilot-name').innerText = user.email.split('@')[0].toUpperCase();
                 document.getElementById('pilot-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
+                
+                // Security Check: Unlocks Admin Console ONLY for your specific Gmail
+                if (user.email === 'hacker.chadhar@gmail.com') {
+                    document.getElementById('admin-gate').classList.remove('hidden');
+                }
+                
+                // Initial Telemetry Retrieval
+                fetchPersonalLog();
             }
         }
         checkAuth();
 
-        const standardDict = ["the", "be", "to", "of", "and", "a", "in", "that", "have", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us"];
-        const dataEntryDict = ["100", "404", "500", "2026", "99.9%", "$45.00", "$1,200", "Invoice", "#8832", "ID-900", "75%", "Q1", "Q2", "Q3", "Q4", "10:00AM", "0.05", "3.14", "192.168.1.1", "Port", "8080", "Balance:", "Total:", "Account", "492-A", "Client", "Order", "5,000", "0.00", "#1", "#2"];
-
-        let modulesCompleted = parseInt(localStorage.getItem('ishark_completed_modules')) || 0;
-        let bestWPM = parseInt(localStorage.getItem('ishark_best_wpm')) || 0;
-        let targetSentence = "", textSpans = [], keystrokeCount = 0, correctKeystrokeCount = 0, rawErrorCount = 0, netErrorCount = 0, currentIndex = 0, startTime = null, isTestFinished = false;
-        let TIME_LIMIT = 30, timeRemaining = TIME_LIMIT, timerInterval = null, CURRENT_MODE = "standard";
-
-        const container = document.getElementById('typing-container'), accuracyElement = document.getElementById('accuracy-log'), wpmElement = document.getElementById('wpm-log'), lessonElement = document.getElementById('lesson-log'), timeElement = document.getElementById('time-log'), sidebarBestWpm = document.getElementById('sidebar-best-wpm');
-        const modalOverlay = document.getElementById('modal-overlay'), finalWpmElement = document.getElementById('final-wpm'), finalAccuracyElement = document.getElementById('final-accuracy');
-        const syncStatus = document.getElementById('sync-status'), leaderboardList = document.getElementById('leaderboard-list');
-        const timeButtons = document.querySelectorAll('.time-btn'), modeButtons = document.querySelectorAll('.mode-btn');
-
-        function updatePersistenceUI() {
-            sidebarBestWpm.innerText = bestWPM;
-            lessonElement.innerText = modulesCompleted;
-        }
-
-        async function fetchLeaderboard() {
+        // Data Retrieval: Fetches ONLY the logged-in user's results for privacy
+        async function fetchPersonalLog() {
+            const logContainer = document.getElementById('personal-log-list');
             try {
                 const { data, error } = await _supabase
                     .from('typing_results')
-                    .select('student_id, wpm, accuracy, created_at')
-                    .order('wpm', { ascending: false })
+                    .select('wpm, accuracy, created_at')
+                    .eq('student_id', currentUser.email)
+                    .order('created_at', { ascending: false })
                     .limit(5);
 
                 if (error) throw error;
-                leaderboardList.innerHTML = '';
+                logContainer.innerHTML = '';
                 if (data.length === 0) {
-                    leaderboardList.innerHTML = '<p class="text-xs text-secondary italic">No records found.</p>';
+                    logContainer.innerHTML = '<p class="text-[10px] opacity-40 uppercase font-bold tracking-widest italic">No flight history.</p>';
                     return;
                 }
-                data.forEach((entry, index) => {
-                    const date = new Date(entry.created_at).toLocaleDateString();
-                    const row = document.createElement('div');
-                    row.className = "flex items-center justify-between p-3 hover:bg-surface-container-low rounded-xl transition-all border-b border-slate-50 last:border-0";
-                    row.innerHTML = `
-                        <div class="flex items-center gap-4">
-                            <span class="text-xs font-black text-secondary w-4">${index + 1}</span>
-                            <div>
-                                <p class="text-sm font-bold text-primary truncate max-w-[120px]">${entry.student_id}</p>
-                                <p class="text-[10px] text-secondary uppercase font-bold">${date}</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-mono font-black text-primary">${entry.wpm} <span class="text-[9px]">WPM</span></p>
-                            <p class="text-[9px] font-bold text-tertiary-fixed-dim">${entry.accuracy}% ACC</p>
-                        </div>
-                    `;
-                    leaderboardList.appendChild(row);
+                let sumAcc = 0;
+                data.forEach(entry => {
+                    sumAcc += entry.accuracy;
+                    const time = new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between items-center border-b border-white/5 pb-4 last:border-0";
+                    div.innerHTML = `<div><p class="text-[9px] opacity-40 mb-1">${time}</p><p class="text-xl font-headline font-black">${entry.wpm} <span class="text-[10px] opacity-40 uppercase">WPM</span></p></div><p class="text-[10px] font-bold text-tertiary-fixed">${entry.accuracy}%</p>`;
+                    logContainer.appendChild(div);
                 });
-            } catch (err) {
-                leaderboardList.innerHTML = '<p class="text-xs text-red-400 font-bold uppercase">Sync Failed</p>';
-            }
+                document.getElementById('session-avg-acc').innerText = Math.round(sumAcc / data.length) + "%";
+            } catch (err) { console.error("Sync Error:", err); }
         }
 
+        // Typing Dictionaries: Randomized words for both modes
+        const standardDict = ["the", "be", "to", "of", "and", "a", "in", "that", "have", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us"];
+        const dataEntryDict = ["100", "404", "500", "2026", "99.9%", "$45.00", "$1,200", "Invoice", "#8832", "ID-900", "75%", "Q1", "Q2", "Q3", "Q4", "10:00AM", "0.05", "3.14", "192.168.1.1", "Port", "8080", "Balance:", "Total:", "Account", "492-A", "Client", "Order", "5,000", "0.00", "#1", "#2"];
+        
+        // Game State Variables
+        let targetSentence = "", textSpans = [], keystrokeCount = 0, correctKeystrokeCount = 0, rawErrorCount = 0, netErrorCount = 0, currentIndex = 0, startTime = null, isTestFinished = false;
+        let TIME_LIMIT = 30, timeRemaining = TIME_LIMIT, timerInterval = null, CURRENT_MODE = "standard";
+
+        // DOM Element Cache
+        const container = document.getElementById('typing-container'), accuracyElement = document.getElementById('accuracy-log'), wpmElement = document.getElementById('wpm-log'), timeElement = document.getElementById('time-log'), sidebarBestWpm = document.getElementById('sidebar-best-wpm');
+        const modalOverlay = document.getElementById('modal-overlay'), finalWpmElement = document.getElementById('final-wpm'), finalAccuracyElement = document.getElementById('final-accuracy'), syncStatus = document.getElementById('sync-status');
+        const timeButtons = document.querySelectorAll('.time-btn'), modeButtons = document.querySelectorAll('.mode-btn');
+
+        // Text Generator: Creates the randomized string for the user to type
         function generateSentence(wordCount) {
             let words = [], dict = CURRENT_MODE === "standard" ? standardDict : dataEntryDict;
             for (let i = 0; i < wordCount; i++) {
                 let w = dict[Math.floor(Math.random() * dict.length)];
-                if (CURRENT_MODE === "standard") {
-                    if (Math.random() > 0.8) w = w.charAt(0).toUpperCase() + w.slice(1);
-                    if (Math.random() > 0.9) w += ",";
-                    if (Math.random() > 0.95) w += ".";
-                }
+                if (CURRENT_MODE === "standard" && Math.random() > 0.8) w = w.charAt(0).toUpperCase() + w.slice(1);
                 words.push(w);
             }
             return words.join(" ");
         }
 
+        // Module Loader: Injects text spans into the UI for character-level tracking
         function loadLesson() {
             targetSentence = generateSentence(200);
             container.innerHTML = '';
@@ -273,9 +300,11 @@
             });
             textSpans = container.querySelectorAll('span');
             textSpans[0].classList.add('current-target');
+            sidebarBestWpm.innerText = bestWPM;
         }
         loadLesson();
 
+        // End Test Logic: Stops timers, calculates final stats, and pushes to Supabase
         async function endTest() {
             isTestFinished = true;
             clearInterval(timerInterval);
@@ -286,17 +315,19 @@
             modalOverlay.style.display = 'flex';
             syncStatus.innerText = "Synchronizing Telemetry...";
 
+            // Lifetime Record Update
             if (finalWPMValue > bestWPM) {
                 bestWPM = finalWPMValue;
                 localStorage.setItem('ishark_best_wpm', bestWPM);
-                updatePersistenceUI();
+                sidebarBestWpm.innerText = bestWPM;
             }
 
+            // Database Syncing: Push current results to the cloud
             try {
                 const { error } = await _supabase
                     .from('typing_results')
                     .insert([{ 
-                        student_id: currentUser ? currentUser.email : 'Unidentified_Pilot', 
+                        student_id: currentUser.email, 
                         mode: CURRENT_MODE,
                         duration: TIME_LIMIT,
                         wpm: finalWPMValue,
@@ -305,16 +336,17 @@
                     }]);
                 if (error) throw error;
                 syncStatus.innerText = "Cloud Sync Successful";
-                fetchLeaderboard();
-            } catch (err) {
-                syncStatus.innerText = "Local Save Only (Offline)";
-            }
+                fetchPersonalLog();
+            } catch (err) { syncStatus.innerText = "Local Save Only (Offline)"; }
         }
 
+        // Keystroke Listener: The main engine loop
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') { e.preventDefault(); resetTest(); return; }
             if (e.key === ' ') e.preventDefault();
             if (isTestFinished) return;
+            
+            // Backspace Handling
             if (e.key === 'Backspace') {
                 if (currentIndex > 0) {
                     textSpans[currentIndex].classList.remove('current-target');
@@ -327,7 +359,10 @@
                 }
                 return;
             }
-            if (e.key.length !== 1) return;
+            
+            if (e.key.length !== 1) return; // Ignore control keys like Shift, Alt, etc.
+            
+            // Start Timer on first keystroke
             if (keystrokeCount === 0) {
                 startTime = new Date();
                 timerInterval = setInterval(() => {
@@ -337,6 +372,8 @@
                     if (timeRemaining <= 0) endTest();
                 }, 1000);
             }
+            
+            // Comparison Logic
             keystrokeCount++;
             const cur = textSpans[currentIndex];
             cur.classList.remove('current-target');
@@ -348,18 +385,23 @@
                 rawErrorCount++; netErrorCount++;
             }
             currentIndex++;
+            
+            // Real-time Stat Calculation
             let acc = Math.round(((keystrokeCount - rawErrorCount) / keystrokeCount) * 100);
             accuracyElement.innerText = (acc < 0 ? 0 : acc) + "%";
             if (startTime) {
                 let mins = (new Date() - startTime) / 60000;
                 if (mins > 0) wpmElement.innerText = Math.round((correctKeystrokeCount / 5) / mins);
             }
+            
+            // Advance Cursor
             if (currentIndex < targetSentence.length) {
                 textSpans[currentIndex].classList.add('current-target');
                 if (currentIndex % 10 === 0) textSpans[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else { endTest(); }
         });
 
+        // Test Reset: Wipes current session state for a fresh start
         function resetTest() {
             clearInterval(timerInterval);
             keystrokeCount = 0; correctKeystrokeCount = 0; rawErrorCount = 0; netErrorCount = 0; currentIndex = 0;
@@ -370,6 +412,7 @@
             loadLesson();
         }
 
+        // UI Event Listeners: Handles duration and mode clicks
         timeButtons.forEach(btn => btn.addEventListener('click', function() {
             timeButtons.forEach(b => { b.classList.remove('active', 'kinetic-gradient', 'text-white'); b.classList.add('border-slate-100'); });
             this.classList.add('active', 'kinetic-gradient', 'text-white');
@@ -384,25 +427,13 @@
             resetTest(); this.blur();
         }));
 
-        document.getElementById('modal-restart-btn').onclick = resetTest;
-        document.getElementById('modal-next-btn').onclick = () => {
-            modulesCompleted++;
-            localStorage.setItem('ishark_completed_modules', modulesCompleted);
-            updatePersistenceUI(); resetTest();
-        };
-        document.getElementById('reset-memory-btn').onclick = () => {
-            localStorage.clear(); location.reload();
-        };
-
+        // Sign Out Logic
         document.getElementById('logout-btn').onclick = async () => {
             await _supabase.auth.signOut();
             window.location.href = 'login.html';
         };
 
-        window.onload = () => {
-            updatePersistenceUI();
-            fetchLeaderboard();
-        };
+        document.getElementById('modal-restart-btn').onclick = resetTest;
     </script>
 </body>
 </html>

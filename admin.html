@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>I-SHARK | Master Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&family=Inter:wght@400;700&display=swap" rel="stylesheet"/>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-headline { font-family: 'Space Grotesk', sans-serif; }
+        .kinetic-gradient { background: linear-gradient(135deg, #00113a 0%, #002366 100%); }
+    </style>
+</head>
+<body class="bg-slate-50 p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-12">
+            <div>
+                <h1 class="font-headline font-black text-3xl text-[#00113a] uppercase tracking-tighter">Master Console</h1>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Global Student Telemetry</p>
+            </div>
+            <a href="index.html" class="bg-white px-6 py-3 rounded-xl font-bold text-xs uppercase shadow-sm hover:shadow-md transition-all">Back to Arena</a>
+        </header>
+
+        <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-slate-100">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <tr>
+                        <th class="p-6">Pilot Email</th>
+                        <th class="p-6 text-center">WPM</th>
+                        <th class="p-6 text-center">Accuracy</th>
+                        <th class="p-6 text-center">Mode</th>
+                        <th class="p-6 text-right">Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="master-table-body" class="divide-y divide-slate-50">
+                    <!-- Data injected here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const _supabase = supabase.createClient(
+            'https://atbjezjqjikloqgfvurz.supabase.co', 
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YmplempxamlrbG9xZ2Z2dXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODk4MDUsImV4cCI6MjA5MDQ2NTgwNX0.lj0Oumu8e63Q81bxvZ57-ALGaAP6IfIfCDBkqwXyvxM'
+        );
+
+        async function fetchAllData() {
+            const { data: { user } } = await _supabase.auth.getUser();
+            if (!user || user.email !== 'hacker.chadhar@gmail.com') {
+                alert("Unauthorized Access Detected.");
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const { data, error } = await _supabase
+                .from('typing_results')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) { console.error(error); return; }
+
+            const tbody = document.getElementById('master-table-body');
+            tbody.innerHTML = data.map(row => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-6 font-bold text-[#00113a] text-sm">${row.student_id}</td>
+                    <td class="p-6 text-center font-black text-lg">${row.wpm}</td>
+                    <td class="p-6 text-center"><span class="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-bold">${row.accuracy}%</span></td>
+                    <td class="p-6 text-center text-xs text-slate-400 uppercase font-bold">${row.mode}</td>
+                    <td class="p-6 text-right text-[10px] text-slate-400 font-bold">${new Date(row.created_at).toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+        fetchAllData();
+    </script>
+</body>
+</html>
