@@ -94,6 +94,7 @@
         </header>
 
         <div class="p-12 max-w-5xl mx-auto space-y-8">
+            <!-- Config Bar -->
             <div class="flex justify-between items-center bg-white p-4 rounded-2xl ambient-shadow">
                 <div class="flex gap-2 bg-surface-container-low p-1 rounded-xl">
                     <button class="mode-btn active px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all" data-mode="standard">Standard</button>
@@ -106,6 +107,7 @@
                 </div>
             </div>
 
+            <!-- Stats Grid -->
             <div class="grid grid-cols-4 gap-6">
                 <div class="bg-white p-6 rounded-2xl ambient-shadow flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Timer</span>
@@ -125,6 +127,21 @@
                 </div>
             </div>
 
+            <!-- Phase 18: Global Leaderboard UI -->
+            <div class="bg-white p-8 rounded-3xl ambient-shadow border border-slate-50">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-headline font-bold text-lg text-primary uppercase tracking-widest">Global Leaderboard</h3>
+                    <button onclick="fetchLeaderboard()" class="text-secondary hover:text-primary transition-all flex items-center gap-2">
+                        <span class="text-[10px] font-bold uppercase tracking-widest">Refresh</span>
+                        <span class="material-symbols-outlined text-sm">refresh</span>
+                    </button>
+                </div>
+                <div id="leaderboard-list" class="space-y-4">
+                    <p class="text-xs italic text-secondary">Synchronizing global rankings...</p>
+                </div>
+            </div>
+
+            <!-- Typing Console -->
             <div class="relative">
                 <div id="typing-container" class="w-full bg-white/60 backdrop-blur-xl rounded-3xl p-12 ambient-shadow border border-white/40 min-h-[220px] text-2xl font-mono leading-[1.8] text-slate-400 select-none overflow-hidden">
                 </div>
@@ -132,6 +149,7 @@
         </div>
     </main>
 
+    <!-- Results Modal -->
     <div id="modal-overlay" class="fixed inset-0 z-[100] hidden items-center justify-center bg-primary/40 backdrop-blur-md">
         <div class="bg-white rounded-[2rem] p-12 text-center ambient-shadow max-w-sm w-full mx-6">
             <h2 class="font-headline font-black text-3xl text-primary mb-2">Syncing Data...</h2>
@@ -158,7 +176,7 @@
     <!-- SUPABASE CLIENT SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // 1. SUPABASE INITIALIZATION (Anon Public Key)
+        // 1. SUPABASE INITIALIZATION
         const _supabase = supabase.createClient(
             'https://atbjezjqjikloqgfvurz.supabase.co', 
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YmplempxamlrbG9xZ2Z2dXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODk4MDUsImV4cCI6MjA5MDQ2NTgwNX0.lj0Oumu8e63Q81bxvZ57-ALGaAP6IfIfCDBkqwXyvxM'
@@ -174,15 +192,56 @@
         let TIME_LIMIT = 30, timeRemaining = TIME_LIMIT, timerInterval = null, CURRENT_MODE = "standard";
 
         const container = document.getElementById('typing-container'), accuracyElement = document.getElementById('accuracy-log'), wpmElement = document.getElementById('wpm-log'), lessonElement = document.getElementById('lesson-log'), timeElement = document.getElementById('time-log'), sidebarBestWpm = document.getElementById('sidebar-best-wpm');
-        const modalOverlay = document.getElementById('modal-overlay'), finalWpmElement = document.getElementById('final-wpm'), finalAccuracyElement = document.getElementById('final-accuracy'), finalErrorsElement = document.getElementById('final-errors');
-        const syncStatus = document.getElementById('sync-status');
+        const modalOverlay = document.getElementById('modal-overlay'), finalWpmElement = document.getElementById('final-wpm'), finalAccuracyElement = document.getElementById('final-accuracy');
+        const syncStatus = document.getElementById('sync-status'), leaderboardList = document.getElementById('leaderboard-list');
         const timeButtons = document.querySelectorAll('.time-btn'), modeButtons = document.querySelectorAll('.mode-btn');
 
         function updatePersistenceUI() {
             sidebarBestWpm.innerText = bestWPM;
             lessonElement.innerText = modulesCompleted;
         }
-        updatePersistenceUI();
+
+        // Phase 18: Fetch Leaderboard Logic
+        async function fetchLeaderboard() {
+            try {
+                const { data, error } = await _supabase
+                    .from('typing_results')
+                    .select('student_id, wpm, accuracy, created_at')
+                    .order('wpm', { ascending: false })
+                    .limit(5);
+
+                if (error) throw error;
+                leaderboardList.innerHTML = '';
+
+                if (data.length === 0) {
+                    leaderboardList.innerHTML = '<p class="text-xs text-secondary italic">No records found.</p>';
+                    return;
+                }
+
+                data.forEach((entry, index) => {
+                    const date = new Date(entry.created_at).toLocaleDateString();
+                    const row = document.createElement('div');
+                    row.className = "flex items-center justify-between p-3 hover:bg-surface-container-low rounded-xl transition-all border-b border-slate-50 last:border-0";
+                    row.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs font-black text-secondary w-4">${index + 1}</span>
+                            <div>
+                                <p class="text-sm font-bold text-primary">${entry.student_id}</p>
+                                <p class="text-[10px] text-secondary uppercase font-bold">${date}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-mono font-black text-primary">${entry.wpm} <span class="text-[9px]">WPM</span></p>
+                            <p class="text-[9px] font-bold text-tertiary-fixed-dim">${entry.accuracy}% ACC</p>
+                        </div>
+                    `;
+                    leaderboardList.appendChild(row);
+                });
+            } catch (err) {
+                console.error("Fetch Error:", err.message);
+                leaderboardList.innerHTML = '<p class="text-xs text-red-400 font-bold uppercase">Sync Failed</p>';
+            }
+        }
 
         function generateSentence(wordCount) {
             let words = [], dict = CURRENT_MODE === "standard" ? standardDict : dataEntryDict;
@@ -209,9 +268,9 @@
             textSpans = container.querySelectorAll('span');
             textSpans[0].classList.add('current-target');
         }
+        
         loadLesson();
 
-        // 2. UPDATED ASYNC END TEST FUNCTION
         async function endTest() {
             isTestFinished = true;
             clearInterval(timerInterval);
@@ -225,14 +284,12 @@
             modalOverlay.style.display = 'flex';
             syncStatus.innerText = "Synchronizing Telemetry...";
 
-            // Local Record Check
             if (finalWPMValue > bestWPM) {
                 bestWPM = finalWPMValue;
                 localStorage.setItem('ishark_best_wpm', bestWPM);
                 updatePersistenceUI();
             }
 
-            // --- SUPABASE CLOUD INSERT ---
             try {
                 const { error } = await _supabase
                     .from('typing_results')
@@ -247,6 +304,7 @@
 
                 if (error) throw error;
                 syncStatus.innerText = "Cloud Sync Successful";
+                fetchLeaderboard(); // Automatically refresh leaderboard after saving
             } catch (err) {
                 console.error("Supabase Error:", err.message);
                 syncStatus.innerText = "Local Save Only (Offline)";
@@ -334,6 +392,12 @@
         };
         document.getElementById('reset-memory-btn').onclick = () => {
             localStorage.clear(); location.reload();
+        };
+
+        // Execute on load
+        window.onload = () => {
+            updatePersistenceUI();
+            fetchLeaderboard();
         };
     </script>
 </body>
