@@ -3,10 +3,11 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>I-SHARK Kinetic | Surgical V3.0 Apex</title>
+    <title>I-SHARK Kinetic | Sovereign V3.1</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700" rel="stylesheet"/>
+    <link rel="icon" type="image/png" href="logo.png">
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -26,7 +27,6 @@
         }
     </script>
     <style>
-        /* 1. LAYOUT & SPACING */
         #typing-container-wrapper { position: relative; overflow: hidden; }
         #typing-container {
             display: flex; flex-wrap: wrap; gap: 0.6em; 
@@ -35,7 +35,6 @@
         .word { display: flex; position: relative; }
         .letter { position: relative; display: inline-block; transition: color 0.1s; z-index: 5; }
 
-        /* 2. THE APEX CARET */
         #caret {
             position: absolute; width: 2px; height: 1.5em; background-color: #00113a;
             transition: all 0.08s cubic-bezier(0.4, 0, 0.2, 1);
@@ -44,7 +43,6 @@
         }
         .dark #caret { background-color: #7afbb1; box-shadow: 0 0 15px #7afbb1; }
 
-        /* 3. KINETIC PARTICLES */
         .particle {
             position: absolute; width: 4px; height: 4px; pointer-events: none;
             border-radius: 1px; z-index: 10; animation: explode 0.5s ease-out forwards;
@@ -54,40 +52,54 @@
             100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
         }
 
-        /* 4. SURGICAL COLORS */
         .correct { color: #00113a !important; font-weight: 600; }
         .dark .correct { color: #f8fafc !important; }
         .incorrect { color: white !important; background-color: #93000a; border-radius: 2px; }
         .pending { color: #cbd5e1; }
         .dark .pending { color: #334155; }
 
-        /* 5. UI BLACKOUT */
-        aside, header, .stats-grid { transition: opacity 0.8s ease; }
-        .is-typing aside, .is-typing header, .is-typing .stats-grid { opacity: 0.01; pointer-events: none; }
+        aside, header, .stats-grid, #personal-log-list, .mode-row { transition: opacity 0.8s ease; }
+        .is-typing aside, .is-typing header, .is-typing .stats-grid, .is-typing #personal-log-list, .is-typing .mode-row { 
+            opacity: 0.01; pointer-events: none; 
+        }
         .dark body { background-color: #020617; color: #f8fafc; }
         .dark aside, .dark .bg-white { background-color: #0f172a; border-color: #1e293b; }
+
+        .sidebar-logo-container { transition: transform 0.3s ease; }
+        .sidebar-logo-container:hover { transform: scale(1.05); }
     </style>
 </head>
 <body class="bg-surface text-on-surface font-body overflow-x-hidden transition-colors duration-500">
 
     <aside class="h-screen w-64 fixed left-0 top-0 z-40 bg-white flex flex-col p-6 gap-4 font-headline border-r border-slate-100">
         <div class="mb-10 flex items-center gap-3">
-            <div class="w-10 h-10 bg-primary dark:bg-primary-dark rounded-lg flex items-center justify-center">
-                <span class="material-symbols-outlined text-white">tsunami</span>
+            <!-- BRANDED LOGO IMPLEMENTATION -->
+            <div class="sidebar-logo-container w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-sm border border-slate-50">
+                <img src="logo.png" alt="I-SHARK" class="w-full h-full object-contain">
             </div>
             <span class="text-xl font-black italic tracking-tighter text-primary dark:text-white">I-SHARK</span>
         </div>
+
         <button onclick="toggleDarkMode()" class="flex items-center gap-3 p-3 w-full hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-all group">
             <span class="material-symbols-outlined dark:text-white">dark_mode</span>
             <span class="text-xs font-bold uppercase tracking-widest dark:text-white">Switch Mode</span>
         </button>
+
         <div class="mt-auto flex flex-col gap-2">
+            <div class="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                <p class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Personal Best</p>
+                <p class="text-2xl font-headline font-black text-primary dark:text-white"><span id="sidebar-best-wpm">0</span></p>
+            </div>
             <div id="admin-gate" class="hidden border-t border-slate-100 dark:border-slate-800 pt-2">
                 <a href="admin.html" class="flex items-center gap-3 p-3 w-full text-primary dark:text-white hover:bg-slate-100 rounded-lg transition-all">
                     <span class="material-symbols-outlined">analytics</span>
                     <span class="text-xs font-bold uppercase tracking-widest">Master Console</span>
                 </a>
             </div>
+            <button id="logout-btn" class="flex items-center gap-3 p-3 w-full text-red-400 hover:bg-red-50 rounded-lg transition-all">
+                <span class="material-symbols-outlined">logout</span>
+                <span class="text-sm font-bold uppercase tracking-widest">Sign Out</span>
+            </button>
             <div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 opacity-60">
                 <p class="text-[8px] font-black uppercase tracking-[0.15em] text-secondary leading-loose dark:text-slate-400 text-center">
                     Developed by Ali Raza Chadahar<br>
@@ -100,40 +112,67 @@
     <main class="ml-64 min-h-screen">
         <header class="sticky top-0 z-30 glass-header h-20 flex justify-between items-center px-12 border-b border-slate-100 dark:border-slate-800">
             <h1 class="font-headline font-bold text-xl text-primary dark:text-white uppercase tracking-widest">Pilot: <span id="pilot-name">...</span></h1>
-            <button id="logout-btn" class="text-red-400 hover:text-red-600 transition-colors">
-                <span class="material-symbols-outlined">logout</span>
-            </button>
+            <div class="w-10 h-10 rounded-full bg-slate-200 ring-2 ring-primary/5 overflow-hidden">
+                <img id="pilot-avatar" src="" alt="Avatar"/>
+            </div>
         </header>
 
         <div class="p-12 max-w-5xl mx-auto space-y-8">
+            <!-- STATS GRID -->
             <div class="stats-grid grid grid-cols-4 gap-6">
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
-                    <span class="text-[10px] font-bold text-secondary uppercase mb-1">Time</span>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center shadow-sm">
+                    <span class="text-[10px] font-bold text-secondary uppercase mb-1">Timer</span>
                     <span id="time-log" class="text-4xl font-headline font-black tabular-nums">30</span>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center shadow-sm">
                     <span class="text-[10px] font-bold text-secondary uppercase mb-1">Accuracy</span>
                     <span id="accuracy-log" class="text-4xl font-headline font-black tabular-nums">100%</span>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
-                    <span class="text-[10px] font-bold text-secondary uppercase mb-1">WPM</span>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center shadow-sm">
+                    <span class="text-[10px] font-bold text-secondary uppercase mb-1">Live Speed</span>
                     <span id="wpm-log" class="text-4xl font-headline font-black tabular-nums">0</span>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
-                    <span class="text-[10px] font-bold text-secondary uppercase mb-1">Best</span>
-                    <span id="best-wpm" class="text-4xl font-headline font-black tabular-nums">0</span>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center shadow-sm">
+                    <span class="text-[10px] font-bold text-secondary uppercase mb-1">Session Avg</span>
+                    <span id="session-avg-acc" class="text-4xl font-headline font-black tabular-nums">--%</span>
                 </div>
             </div>
 
-            <div id="typing-container-wrapper" class="bg-white dark:bg-slate-900/50 rounded-[2.5rem] p-12 border border-slate-100 dark:border-slate-800 shadow-2xl">
-                <div id="caret"></div>
-                <div id="typing-container" class="font-mono italic"></div>
+            <!-- MODE CONTROLS -->
+            <div class="mode-row flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                <div class="flex gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl">
+                    <button class="mode-btn active px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all bg-primary text-white" data-mode="standard">Standard</button>
+                    <button class="mode-btn px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-secondary" data-mode="data-entry">Data Entry</button>
+                    <button id="revenge-btn" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-red-400 border border-red-100 dark:border-red-900 hidden" onclick="toggleRevenge()">Revenge Mode</button>
+                </div>
+                <div class="flex gap-2">
+                    <button class="time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" data-time="15">15s</button>
+                    <button class="time-btn active px-4 py-2 rounded-lg text-xs font-bold bg-primary text-white shadow-md transition-all" data-time="30">30s</button>
+                    <button class="time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" data-time="60">60s</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-8">
+                <div class="col-span-2">
+                    <div id="typing-container-wrapper" class="bg-white dark:bg-slate-900/50 rounded-[2.5rem] p-12 border border-slate-100 dark:border-slate-800 shadow-2xl min-h-[300px]">
+                        <div id="caret"></div>
+                        <div id="typing-container" class="font-mono italic"></div>
+                    </div>
+                </div>
+                <div class="col-span-1" id="personal-log-list">
+                    <div class="bg-primary p-8 rounded-[2rem] text-white h-full shadow-xl">
+                        <h3 class="font-headline font-bold text-xs uppercase tracking-widest text-accent mb-8">Career Log</h3>
+                        <div id="personal-log-list-content" class="space-y-6">
+                            <p class="text-[10px] opacity-40 uppercase italic">Scanning...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
     <div id="modal-overlay" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-md p-6">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-12 text-center max-w-sm w-full">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-12 text-center max-w-sm w-full shadow-2xl">
             <h2 class="font-headline font-black text-3xl mb-8 dark:text-white uppercase">Mission Over</h2>
             <div class="grid grid-cols-2 gap-4 mb-8">
                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
@@ -145,7 +184,7 @@
                     <p id="final-accuracy" class="text-3xl font-black">0%</p>
                 </div>
             </div>
-            <button onclick="location.reload()" class="w-full bg-primary dark:bg-white dark:text-primary py-5 rounded-2xl font-black uppercase text-xs tracking-widest text-white">Next Flight (Tab)</button>
+            <button onclick="resetTest()" class="w-full bg-primary dark:bg-white dark:text-primary py-5 rounded-2xl font-black uppercase text-xs tracking-widest text-white shadow-lg">Next Flight (Tab)</button>
         </div>
     </div>
 
@@ -156,9 +195,7 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YmplempxamlrbG9xZ2Z2dXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODk4MDUsImV4cCI6MjA5MDQ2NTgwNX0.lj0Oumu8e63Q81bxvZ57-ALGaAP6IfIfCDBkqwXyvxM'
         );
 
-        // --- THE ZEN SOUNDSCAPE (SYNTH) ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
         function playCorrectClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
@@ -166,7 +203,7 @@
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(150, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.05);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + 0.05);
@@ -177,15 +214,13 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
-            oscillatorFreq = 80;
-            osc.frequency.setValueAtTime(oscillatorFreq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + 0.15);
         }
 
-        // --- KINETIC PARTICLES ---
         function spawnParticles(x, y) {
             const wrapper = document.getElementById('typing-container-wrapper');
             const color = document.documentElement.classList.contains('dark') ? '#7afbb1' : '#00113a';
@@ -204,9 +239,9 @@
             }
         }
 
-        let currentUser = null, bestWPM = parseInt(localStorage.getItem('ishark_best_wpm')) || 0;
-        let wordList = [], currentWordIdx = 0, currentLetterIdx = 0, isTestFinished = false, timerInterval = null, timeRemaining = 30;
-        let keystrokes = 0, errors = 0, startTime = null;
+        let currentUser = null, bestWPM = parseInt(localStorage.getItem('ishark_best_wpm')) || 0, errorMap = {}, isRevengeMode = false;
+        let wordList = [], currentWordIdx = 0, currentLetterIdx = 0, isTestFinished = false, timerInterval = null, timeRemaining = 30, TIME_LIMIT = 30;
+        let keystrokes = 0, errors = 0, startTime = null, CURRENT_MODE = "standard";
 
         async function checkAuth() {
             const { data: { user } } = await _supabase.auth.getUser();
@@ -214,11 +249,29 @@
             else {
                 currentUser = user;
                 document.getElementById('pilot-name').innerText = user.email.split('@')[0].toUpperCase();
-                document.getElementById('best-wpm').innerText = bestWPM;
+                document.getElementById('pilot-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
+                document.getElementById('sidebar-best-wpm').innerText = bestWPM;
                 if (user.email === 'hacker.chadhar@gmail.com') document.getElementById('admin-gate').classList.remove('hidden');
+                fetchPersonalLog();
             }
         }
         checkAuth();
+
+        async function fetchPersonalLog() {
+            const logContainer = document.getElementById('personal-log-list-content');
+            try {
+                const { data, error } = await _supabase.from('typing_results').select('wpm, accuracy, created_at').eq('student_id', currentUser.email).order('created_at', { ascending: false }).limit(5);
+                if (error) throw error;
+                logContainer.innerHTML = data.length ? '' : '<p class="text-[10px] opacity-40 uppercase italic">No history.</p>';
+                let sumAcc = 0;
+                data.forEach(entry => {
+                    sumAcc += entry.accuracy;
+                    const time = new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    logContainer.innerHTML += `<div class="flex justify-between items-center border-b border-white/5 pb-4 last:border-0"><div><p class="text-[9px] opacity-40 mb-1">${time}</p><p class="text-xl font-headline font-black">${entry.wpm} <span class="text-[10px] opacity-40 uppercase">WPM</span></p></div><p class="text-[10px] font-bold text-accent">${entry.accuracy}%</p></div>`;
+                });
+                if(data.length) document.getElementById('session-avg-acc').innerText = Math.round(sumAcc / data.length) + "%";
+            } catch (err) {}
+        }
 
         const dict = ["the", "be", "to", "of", "and", "a", "in", "that", "have", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us"];
 
@@ -226,7 +279,13 @@
             const container = document.getElementById('typing-container');
             container.innerHTML = '';
             wordList = [];
-            for (let i = 0; i < 60; i++) wordList.push(dict[Math.floor(Math.random() * dict.length)]);
+            let activeDict = dict;
+            if (isRevengeMode && Object.keys(errorMap).length > 0) {
+                activeDict = dict.filter(word => Object.keys(errorMap).some(key => word.includes(key)));
+                if(activeDict.length === 0) activeDict = dict;
+            }
+
+            for (let i = 0; i < 60; i++) wordList.push(activeDict[Math.floor(Math.random() * activeDict.length)]);
             wordList.forEach((word, wIdx) => {
                 const wordDiv = document.createElement('div');
                 wordDiv.className = 'word';
@@ -260,7 +319,7 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') { e.preventDefault(); location.reload(); return; }
+            if (e.key === 'Tab') { e.preventDefault(); resetTest(); return; }
             if (isTestFinished) return;
 
             if (!startTime && e.key.length === 1) {
@@ -308,6 +367,8 @@
                         activeSpan.className = 'letter incorrect';
                         errors++;
                         playErrorThud();
+                        errorMap[activeWord[currentLetterIdx]] = (errorMap[activeWord[currentLetterIdx]] || 0) + 1;
+                        document.getElementById('revenge-btn').classList.remove('hidden');
                     }
                     currentLetterIdx++;
                     updateCaret();
@@ -328,18 +389,35 @@
             isTestFinished = true;
             clearInterval(timerInterval);
             document.body.classList.remove('is-typing');
-            const wpm = document.getElementById('wpm-log').innerText;
-            const acc = document.getElementById('accuracy-log').innerText;
+            const wpm = parseInt(document.getElementById('wpm-log').innerText);
+            const acc = parseInt(document.getElementById('accuracy-log').innerText);
             document.getElementById('final-wpm').innerText = wpm;
-            document.getElementById('final-accuracy').innerText = acc;
+            document.getElementById('final-accuracy').innerText = acc + "%";
             document.getElementById('modal-overlay').style.display = 'flex';
-            if (parseInt(wpm) > bestWPM) {
-                bestWPM = parseInt(wpm);
+
+            if (wpm > bestWPM) {
+                bestWPM = wpm;
                 localStorage.setItem('ishark_best_wpm', bestWPM);
+                document.getElementById('sidebar-best-wpm').innerText = bestWPM;
             }
+
             try {
-                await _supabase.from('typing_results').insert([{ student_id: currentUser.email, wpm: parseInt(wpm), accuracy: parseInt(acc) }]);
+                await _supabase.from('typing_results').insert([{ student_id: currentUser.email, wpm: wpm, accuracy: acc, missed_keys: errorMap }]);
+                fetchPersonalLog();
             } catch (err) {}
+        }
+
+        function resetTest() {
+            clearInterval(timerInterval);
+            keystrokes = 0; errors = 0; currentWordIdx = 0; currentLetterIdx = 0;
+            startTime = null; isTestFinished = false; timeRemaining = TIME_LIMIT;
+            document.getElementById('time-log').innerText = TIME_LIMIT;
+            document.getElementById('wpm-log').innerText = "0";
+            document.getElementById('accuracy-log').innerText = "100%";
+            document.body.classList.remove('is-typing');
+            document.getElementById('modal-overlay').style.display = 'none';
+            if (!isRevengeMode) errorMap = {};
+            loadLesson();
         }
 
         function toggleDarkMode() {
@@ -347,6 +425,34 @@
             localStorage.setItem('ishark_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
             setTimeout(updateCaret, 200);
         }
+
+        function toggleRevenge() {
+            isRevengeMode = !isRevengeMode;
+            document.getElementById('revenge-btn').classList.toggle('bg-red-500');
+            document.getElementById('revenge-btn').classList.toggle('text-white');
+            resetTest();
+        }
+
+        // DURATION & MODE LISTENERS
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                document.querySelectorAll('.time-btn').forEach(b => b.className = "time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all");
+                e.target.className = "time-btn active px-4 py-2 rounded-lg text-xs font-bold bg-primary text-white shadow-md transition-all";
+                TIME_LIMIT = parseInt(e.target.dataset.time);
+                resetTest();
+            };
+        });
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.className = "mode-btn px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-secondary");
+                e.target.className = "mode-btn active px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all bg-primary text-white";
+                CURRENT_MODE = e.target.dataset.mode;
+                resetTest();
+            };
+        });
+
+        document.getElementById('logout-btn').onclick = async () => { await _supabase.auth.signOut(); window.location.href = 'login.html'; };
         if (localStorage.getItem('ishark_theme') === 'dark') document.documentElement.classList.add('dark');
         loadLesson();
     </script>
