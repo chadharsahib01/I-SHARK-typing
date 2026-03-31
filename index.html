@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>I-SHARK Kinetic | Performance Command</title>
+    <title>I-SHARK Kinetic | Surgical Command</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -19,19 +19,12 @@
                         "primary": "#00113a",
                         "primary-container": "#002366",
                         "surface-container": "#ebeef0",
-                        "surface-container-lowest": "#ffffff",
                         "surface-container-low": "#f1f4f6",
-                        "surface-container-highest": "#e0e3e5",
                         "tertiary-fixed": "#7afbb1",
-                        "tertiary-container": "#003019",
                         "error-container": "#ffdad6",
                         "on-error-container": "#93000a",
                     },
-                    fontFamily: {
-                        "headline": ["Space Grotesk"],
-                        "body": ["Inter"],
-                        "mono": ["JetBrains Mono"]
-                    },
+                    fontFamily: { "headline": ["Space Grotesk"], "body": ["Inter"], "mono": ["JetBrains Mono"] },
                 },
             },
         }
@@ -41,13 +34,48 @@
         .kinetic-gradient { background: linear-gradient(135deg, #00113a 0%, #002366 100%); }
         .ambient-shadow { box-shadow: 0 20px 40px rgba(0, 17, 58, 0.06); }
         .glass-header { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); }
-        #typing-container span { border-left: 2px solid transparent; padding: 0 1px; transition: color 0.1s; }
+        
+        /* 1. TYPING CONTAINER & SPANS */
+        #typing-container { position: relative; transition: all 0.4s ease; }
+        #typing-container span { padding: 0 1px; transition: color 0.1s; }
         .correct { color: #00113a !important; font-weight: 500; }
         .incorrect { color: #93000a !important; background-color: #ffdad6; border-radius: 2px; }
-        @keyframes blink { 0%, 100% { border-left-color: #00113a; } 50% { border-left-color: transparent; } }
-        .current-target { border-left: 2px solid #00113a !important; animation: blink 1s step-end infinite; color: #00113a !important; }
-        .timer-warning { color: #ba1a1a !important; animation: pulse 1s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* 2. THE SMOOTH CARET */
+        #caret {
+            position: absolute; 
+            width: 2px; 
+            height: 1.4em; 
+            background-color: #00113a;
+            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1); 
+            box-shadow: 0 0 10px rgba(0, 17, 58, 0.3);
+            z-index: 10; 
+            pointer-events: none;
+        }
+
+        /* 3. UI IMMERSION (DIMMING) */
+        aside, header, .stats-grid, #personal-log-list { 
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        
+        .is-typing aside, 
+        .is-typing header, 
+        .is-typing .stats-grid, 
+        .is-typing #personal-log-list { 
+            opacity: 0.03; 
+            pointer-events: none; 
+        }
+
+        /* 4. HIGH-CONTRAST GLOW */
+        .is-typing #typing-container {
+            background: white !important;
+            border-color: #00113a !important;
+            box-shadow: 0 0 60px rgba(0, 17, 58, 0.08);
+            font-style: normal !important; /* Removes italic during typing for precision */
+        }
+
+        /* 5. HIDE OLD CURSOR LOGIC */
+        .current-target { border-left: none !important; animation: none !important; }
     </style>
 </head>
 <body class="bg-surface text-on-surface font-body overflow-x-hidden">
@@ -59,38 +87,32 @@
             </div>
             <span class="text-xl font-black italic tracking-tighter text-primary">I-SHARK</span>
         </div>
-
         <nav class="flex flex-col gap-2">
             <div class="bg-primary text-white shadow-lg shadow-primary/20 rounded-lg flex items-center gap-3 p-3 transition-all cursor-pointer">
                 <span class="material-symbols-outlined">keyboard</span>
                 <span class="text-sm font-bold">Practice Arena</span>
             </div>
         </nav>
-
         <div class="mt-auto flex flex-col gap-2">
             <div class="p-4 bg-surface-container-low rounded-xl">
                 <p class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Personal Best</p>
                 <p class="text-2xl font-headline font-black text-primary"><span id="sidebar-best-wpm">0</span> <span class="text-xs font-medium">WPM</span></p>
             </div>
-            
             <div id="admin-gate" class="hidden border-t border-slate-100 mt-2 pt-2">
                 <a href="admin.html" class="flex items-center gap-3 p-3 w-full text-primary hover:bg-slate-100 rounded-lg transition-all">
                     <span class="material-symbols-outlined">analytics</span>
                     <span class="text-sm font-bold uppercase tracking-widest">Master Console</span>
                 </a>
             </div>
-
             <button id="logout-btn" class="flex items-center gap-3 p-3 w-full text-red-400 hover:bg-red-50 rounded-lg transition-all">
                 <span class="material-symbols-outlined">logout</span>
                 <span class="text-sm font-bold uppercase tracking-widest">Sign Out</span>
             </button>
-
             <div class="mt-6 pt-6 border-t border-slate-100 opacity-60">
                 <p class="text-[8px] font-black uppercase tracking-[0.15em] text-secondary leading-loose">
                     Developed by <br>
                     <span class="text-primary text-[10px]">Ali Raza Chadahar</span><br>
-                    Director @ I-SHARK Institute <br>
-                    of Computer Technologies
+                    Director @ I-SHARK Institute
                 </p>
             </div>
         </div>
@@ -105,20 +127,20 @@
         </header>
 
         <div class="p-12 max-w-5xl mx-auto space-y-8">
-            <div class="grid grid-cols-4 gap-6">
-                <div class="bg-white p-6 rounded-2xl ambient-shadow border border-slate-50">
+            <div class="stats-grid grid grid-cols-4 gap-6">
+                <div class="bg-white p-6 rounded-2xl ambient-shadow border border-slate-50 flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Timer</span>
                     <span id="time-log" class="text-4xl font-headline font-black text-primary tabular-nums">30</span>
                 </div>
-                <div class="bg-white p-6 rounded-2xl ambient-shadow border border-slate-50">
+                <div class="bg-white p-6 rounded-2xl ambient-shadow border border-slate-50 flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Accuracy</span>
                     <span id="accuracy-log" class="text-4xl font-headline font-black text-primary tabular-nums">100%</span>
                 </div>
-                <div class="bg-white p-6 rounded-2xl ambient-shadow border border-slate-50">
+                <div class="bg-white p-6 rounded-2xl ambient-shadow border border-slate-50 flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Live Speed</span>
                     <span id="wpm-log" class="text-4xl font-headline font-black text-primary tabular-nums">0</span>
                 </div>
-                <div class="bg-white p-6 rounded-2xl ambient-shadow border border-slate-50">
+                <div class="bg-white p-6 rounded-2xl ambient-shadow border border-slate-50 flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Session Avg</span>
                     <span id="session-avg-acc" class="text-4xl font-headline font-black text-primary tabular-nums">--%</span>
                 </div>
@@ -138,14 +160,16 @@
                             <button class="time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 hover:bg-slate-50 transition-all" data-time="60">60s</button>
                         </div>
                     </div>
-                    <div id="typing-container" class="w-full bg-white/80 backdrop-blur-xl rounded-[2rem] p-10 ambient-shadow border border-white min-h-[220px] text-2xl font-mono leading-[1.8] text-slate-300 select-none overflow-hidden italic"></div>
+                    <!-- TARGET CONTAINER -->
+                    <div id="typing-container" class="w-full bg-white/80 backdrop-blur-xl rounded-[2rem] p-10 ambient-shadow border border-white min-h-[220px] text-2xl font-mono leading-[1.8] text-slate-300 select-none overflow-hidden italic">
+                        <div id="caret"></div>
+                    </div>
                 </div>
-
-                <div class="col-span-1">
+                <div class="col-span-1" id="personal-log-list">
                     <div class="bg-primary p-8 rounded-[2rem] ambient-shadow border border-white/10 text-white h-full">
                         <h3 class="font-headline font-bold text-sm uppercase tracking-[0.2em] text-tertiary-fixed mb-8">Career Log</h3>
-                        <div id="personal-log-list" class="space-y-6 text-white/80">
-                            <p class="text-[10px] font-bold uppercase opacity-40 tracking-widest italic">Scanning logs...</p>
+                        <div id="personal-log-list-content" class="space-y-6 text-white/80">
+                            <p class="text-[10px] opacity-40 uppercase font-bold italic">Scanning logs...</p>
                         </div>
                     </div>
                 </div>
@@ -153,21 +177,20 @@
         </div>
     </main>
 
+    <!-- RESULTS MODAL -->
     <div id="modal-overlay" class="fixed inset-0 z-[100] hidden items-center justify-center bg-primary/40 backdrop-blur-md">
         <div class="bg-white rounded-[2rem] p-12 text-center ambient-shadow max-w-sm w-full mx-6 border border-slate-100">
             <h2 class="font-headline font-black text-3xl text-primary mb-2">Syncing Data...</h2>
-            <div id="sync-status" class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-6 italic">Connecting to I-SHARK Cloud</div>
-            
+            <div id="sync-status" class="text-[10px] font-bold text-secondary uppercase tracking-widest mb-6 italic">Connecting to Cloud</div>
             <div class="mb-8">
                 <p class="text-[9px] font-bold text-secondary uppercase mb-2">Weakest Links</p>
                 <div id="weak-keys-display" class="flex flex-wrap justify-center gap-2 min-h-[24px]"></div>
             </div>
-
             <div class="grid grid-cols-2 gap-4 mb-10">
                 <div class="bg-surface-container-low p-4 rounded-2xl text-center"><p class="text-[9px] font-bold text-secondary uppercase mb-1">Velocity</p><p class="text-2xl font-headline font-black text-primary"><span id="final-wpm">0</span></p></div>
                 <div class="bg-surface-container-low p-4 rounded-2xl text-center"><p class="text-[9px] font-bold text-secondary uppercase mb-1">Precision</p><p class="text-2xl font-headline font-black text-primary"><span id="final-accuracy">0</span>%</p></div>
             </div>
-            <button id="modal-restart-btn" class="w-full kinetic-gradient text-white py-5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-primary/20 transition-all">Next Flight (Tab)</button>
+            <button id="modal-restart-btn" class="w-full kinetic-gradient text-white py-5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all">Next Flight (Tab)</button>
         </div>
     </div>
 
@@ -178,224 +201,163 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YmplempxamlrbG9xZ2Z2dXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODk4MDUsImV4cCI6MjA5MDQ2NTgwNX0.lj0Oumu8e63Q81bxvZ57-ALGaAP6IfIfCDBkqwXyvxM'
         );
 
-        let currentUser = null;
-        let bestWPM = parseInt(localStorage.getItem('ishark_best_wpm')) || 0;
-        let errorMap = {};
-        let isRevengeMode = false;
+        // MUFFLED THUD AUDIO
+        const errorSound = new Audio('https://raw.githubusercontent.com/ashish-sharma/typing-test/master/src/assets/audio/error.mp3');
+        errorSound.volume = 0.4;
+
+        let currentUser = null, bestWPM = parseInt(localStorage.getItem('ishark_best_wpm')) || 0, errorMap = {}, isRevengeMode = false;
+        let targetSentence = "", textSpans = [], keystrokeCount = 0, correctKeystrokeCount = 0, rawErrorCount = 0, netErrorCount = 0, currentIndex = 0, startTime = null, isTestFinished = false;
+        let TIME_LIMIT = 30, timeRemaining = TIME_LIMIT, timerInterval = null, CURRENT_MODE = "standard";
+
+        const container = document.getElementById('typing-container'), caret = document.getElementById('caret'), wpmElement = document.getElementById('wpm-log'), timeElement = document.getElementById('time-log');
 
         async function checkAuth() {
             const { data: { user } } = await _supabase.auth.getUser();
-            if (!user) {
-                window.location.href = 'login.html';
-            } else {
+            if (!user) window.location.href = 'login.html';
+            else {
                 currentUser = user;
                 document.getElementById('pilot-name').innerText = user.email.split('@')[0].toUpperCase();
                 document.getElementById('pilot-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
-                if (user.email === 'hacker.chadhar@gmail.com') {
-                    document.getElementById('admin-gate').classList.remove('hidden');
-                }
+                if (user.email === 'hacker.chadhar@gmail.com') document.getElementById('admin-gate').classList.remove('hidden');
                 fetchPersonalLog();
             }
         }
         checkAuth();
 
         async function fetchPersonalLog() {
-            const logContainer = document.getElementById('personal-log-list');
+            const logContainer = document.getElementById('personal-log-list-content');
             try {
                 const { data, error } = await _supabase.from('typing_results').select('wpm, accuracy, created_at').eq('student_id', currentUser.email).order('created_at', { ascending: false }).limit(5);
                 if (error) throw error;
                 logContainer.innerHTML = '';
-                if (data.length === 0) {
-                    logContainer.innerHTML = '<p class="text-[10px] opacity-40 uppercase font-bold tracking-widest italic">No flight history.</p>';
-                    return;
-                }
-                let sumAcc = 0;
+                if (data.length === 0) { logContainer.innerHTML = '<p class="text-[10px] opacity-40 uppercase font-bold italic">No history.</p>'; return; }
                 data.forEach(entry => {
-                    sumAcc += entry.accuracy;
                     const time = new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const div = document.createElement('div');
-                    div.className = "flex justify-between items-center border-b border-white/5 pb-4 last:border-0";
-                    div.innerHTML = `<div><p class="text-[9px] opacity-40 mb-1">${time}</p><p class="text-xl font-headline font-black">${entry.wpm} <span class="text-[10px] opacity-40 uppercase">WPM</span></p></div><p class="text-[10px] font-bold text-tertiary-fixed">${entry.accuracy}%</p>`;
-                    logContainer.appendChild(div);
+                    logContainer.innerHTML += `<div class="flex justify-between items-center border-b border-white/5 pb-4 last:border-0"><div><p class="text-[9px] opacity-40 mb-1">${time}</p><p class="text-xl font-headline font-black">${entry.wpm} <span class="text-[10px] opacity-40 uppercase">WPM</span></p></div><p class="text-[10px] font-bold text-tertiary-fixed">${entry.accuracy}%</p></div>`;
                 });
-                document.getElementById('session-avg-acc').innerText = Math.round(sumAcc / data.length) + "%";
             } catch (err) { console.error(err); }
         }
 
         const standardDict = ["the", "be", "to", "of", "and", "a", "in", "that", "have", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us"];
-        const dataEntryDict = ["100", "404", "500", "2026", "99.9%", "$45.00", "$1,200", "Invoice", "#8832", "ID-900", "75%", "Q1", "Q2", "Q3", "Q4", "10:00AM", "0.05", "3.14", "192.168.1.1", "Port", "8080", "Balance:", "Total:", "Account", "492-A", "Client", "Order", "5,000", "0.00", "#1", "#2"];
         
-        let targetSentence = "", textSpans = [], keystrokeCount = 0, correctKeystrokeCount = 0, rawErrorCount = 0, netErrorCount = 0, currentIndex = 0, startTime = null, isTestFinished = false;
-        let TIME_LIMIT = 30, timeRemaining = TIME_LIMIT, timerInterval = null, CURRENT_MODE = "standard";
-
-        const container = document.getElementById('typing-container'), accuracyElement = document.getElementById('accuracy-log'), wpmElement = document.getElementById('wpm-log'), timeElement = document.getElementById('time-log'), sidebarBestWpm = document.getElementById('sidebar-best-wpm');
-        const modalOverlay = document.getElementById('modal-overlay'), finalWpmElement = document.getElementById('final-wpm'), finalAccuracyElement = document.getElementById('final-accuracy'), syncStatus = document.getElementById('sync-status');
-        const timeButtons = document.querySelectorAll('.time-btn'), modeButtons = document.querySelectorAll('.mode-btn');
-
-        function toggleRevenge() {
-            isRevengeMode = !isRevengeMode;
-            const btn = document.getElementById('revenge-btn');
-            if (isRevengeMode) {
-                btn.classList.replace('text-red-400', 'bg-red-500');
-                btn.classList.add('text-white');
-            } else {
-                btn.classList.replace('bg-red-500', 'text-red-400');
-                btn.classList.remove('text-white');
+        function updateCaret() {
+            if (currentIndex < textSpans.length) {
+                const charSpan = textSpans[currentIndex];
+                caret.style.left = charSpan.offsetLeft + 'px';
+                caret.style.top = charSpan.offsetTop + 'px';
             }
-            resetTest();
-        }
-
-        function generateSentence(wordCount) {
-            let words = [], dict = CURRENT_MODE === "standard" ? standardDict : dataEntryDict;
-            const missedKeys = Object.keys(errorMap);
-            if (isRevengeMode && missedKeys.length > 0) {
-                dict = dict.filter(word => missedKeys.some(key => word.toLowerCase().includes(key.toLowerCase())));
-                if (dict.length === 0) dict = standardDict;
-            }
-            for (let i = 0; i < wordCount; i++) {
-                let w = dict[Math.floor(Math.random() * dict.length)];
-                if (CURRENT_MODE === "standard" && Math.random() > 0.8) w = w.charAt(0).toUpperCase() + w.slice(1);
-                words.push(w);
-            }
-            return words.join(" ");
         }
 
         function loadLesson() {
-            targetSentence = generateSentence(200);
-            container.innerHTML = '';
+            targetSentence = generateSentence(150);
+            container.innerHTML = '<div id="caret"></div>';
             targetSentence.split('').forEach(char => {
                 const s = document.createElement('span');
                 s.innerText = char;
                 container.appendChild(s);
             });
             textSpans = container.querySelectorAll('span');
-            textSpans[0].classList.add('current-target');
-            sidebarBestWpm.innerText = bestWPM;
+            setTimeout(updateCaret, 50); 
         }
-        loadLesson();
 
-        async function endTest() {
-            isTestFinished = true;
-            clearInterval(timerInterval);
-            let finalWPMValue = parseInt(wpmElement.innerText);
-            let finalAccValue = parseInt(accuracyElement.innerText);
-            finalWpmElement.innerText = finalWPMValue;
-            finalAccuracyElement.innerText = finalAccValue;
-            modalOverlay.style.display = 'flex';
-            syncStatus.innerText = "Synchronizing Telemetry...";
-
-            const weakDisplay = document.getElementById('weak-keys-display');
-            weakDisplay.innerHTML = '';
-            const sortedKeys = Object.entries(errorMap).sort((a, b) => b[1] - a[1]).slice(0, 3);
-            if(sortedKeys.length > 0) {
-                document.getElementById('revenge-btn').classList.remove('hidden');
-                sortedKeys.forEach(([key, count]) => {
-                    const span = document.createElement('span');
-                    span.className = "px-3 py-1 bg-error-container text-on-error-container text-[10px] font-black rounded-lg uppercase";
-                    span.innerText = `${key === ' ' ? 'Space' : key} (${count})`;
-                    weakDisplay.appendChild(span);
-                });
-            } else {
-                weakDisplay.innerHTML = '<p class="text-[9px] text-slate-300 italic">Perfect Flight</p>';
+        function generateSentence(wordCount) {
+            let words = [], dict = standardDict;
+            const missedKeys = Object.keys(errorMap);
+            if (isRevengeMode && missedKeys.length > 0) {
+                dict = standardDict.filter(word => missedKeys.some(key => word.toLowerCase().includes(key.toLowerCase())));
+                if (dict.length === 0) dict = standardDict;
             }
-
-            if (finalWPMValue > bestWPM) {
-                bestWPM = finalWPMValue;
-                localStorage.setItem('ishark_best_wpm', bestWPM);
-                sidebarBestWpm.innerText = bestWPM;
-            }
-
-            try {
-                const { error } = await _supabase.from('typing_results').insert([{ 
-                    student_id: currentUser.email, mode: CURRENT_MODE, duration: TIME_LIMIT, wpm: finalWPMValue, accuracy: finalAccValue, net_errors: netErrorCount, missed_keys: errorMap 
-                }]);
-                if (error) throw error;
-                syncStatus.innerText = "Cloud Sync Successful";
-                fetchPersonalLog();
-            } catch (err) { syncStatus.innerText = "Local Save Only (Offline)"; }
+            for (let i = 0; i < wordCount; i++) words.push(dict[Math.floor(Math.random() * dict.length)]);
+            return words.join(" ");
         }
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') { e.preventDefault(); resetTest(); return; }
             if (e.key === ' ') e.preventDefault();
             if (isTestFinished) return;
-            if (e.key === 'Backspace') {
-                if (currentIndex > 0) {
-                    textSpans[currentIndex].classList.remove('current-target');
-                    currentIndex--;
-                    if (textSpans[currentIndex].classList.contains('incorrect')) netErrorCount--;
-                    else if (textSpans[currentIndex].classList.contains('correct')) correctKeystrokeCount--;
-                    textSpans[currentIndex].classList.remove('correct', 'incorrect');
-                    textSpans[currentIndex].classList.add('current-target');
-                    textSpans[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-                return;
-            }
-            if (e.key.length !== 1) return;
+            
             if (keystrokeCount === 0) {
                 startTime = new Date();
+                document.body.classList.add('is-typing');
                 timerInterval = setInterval(() => {
                     timeRemaining--;
                     timeElement.innerText = timeRemaining;
-                    if (timeRemaining <= 10) timeElement.classList.add('timer-warning');
                     if (timeRemaining <= 0) endTest();
                 }, 1000);
             }
+
+            if (e.key === 'Backspace') {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    const cur = textSpans[currentIndex];
+                    if (cur.classList.contains('incorrect')) netErrorCount--;
+                    else correctKeystrokeCount--;
+                    cur.className = "";
+                    updateCaret();
+                }
+                return;
+            }
+
+            if (e.key.length !== 1) return;
+            
             keystrokeCount++;
             const cur = textSpans[currentIndex];
-            cur.classList.remove('current-target');
             if (e.key === targetSentence[currentIndex]) {
                 cur.classList.add('correct');
                 correctKeystrokeCount++;
             } else {
-                let targetKey = targetSentence[currentIndex];
-                errorMap[targetKey] = (errorMap[targetKey] || 0) + 1;
+                errorSound.currentTime = 0;
+                errorSound.play();
+                errorMap[targetSentence[currentIndex]] = (errorMap[targetSentence[currentIndex]] || 0) + 1;
                 cur.classList.add('incorrect');
-                rawErrorCount++; netErrorCount++;
+                rawErrorCount++;
             }
+            
             currentIndex++;
-            let acc = Math.round(((keystrokeCount - rawErrorCount) / keystrokeCount) * 100);
-            accuracyElement.innerText = (acc < 0 ? 0 : acc) + "%";
+            updateCaret();
+            
             if (startTime) {
                 let mins = (new Date() - startTime) / 60000;
-                if (mins > 0) wpmElement.innerText = Math.round((correctKeystrokeCount / 5) / mins);
+                wpmElement.innerText = Math.round((correctKeystrokeCount / 5) / mins);
+                document.getElementById('accuracy-log').innerText = Math.round(((keystrokeCount - rawErrorCount) / keystrokeCount) * 100) + "%";
             }
-            if (currentIndex < targetSentence.length) {
-                textSpans[currentIndex].classList.add('current-target');
-                if (currentIndex % 10 === 0) textSpans[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else { endTest(); }
         });
+
+        async function endTest() {
+            isTestFinished = true;
+            clearInterval(timerInterval);
+            document.body.classList.remove('is-typing');
+            document.getElementById('final-wpm').innerText = wpmElement.innerText;
+            document.getElementById('final-accuracy').innerText = document.getElementById('accuracy-log').innerText;
+            document.getElementById('modal-overlay').style.display = 'flex';
+            const weakDisplay = document.getElementById('weak-keys-display');
+            weakDisplay.innerHTML = '';
+            const sortedKeys = Object.entries(errorMap).sort((a, b) => b[1] - a[1]).slice(0, 3);
+            if (sortedKeys.length > 0) {
+                document.getElementById('revenge-btn').classList.remove('hidden');
+                sortedKeys.forEach(([key, count]) => {
+                    weakDisplay.innerHTML += `<span class="px-3 py-1 bg-error-container text-on-error-container text-[10px] font-black rounded-lg uppercase">${key === ' ' ? 'Space' : key} (${count})</span>`;
+                });
+            }
+            try {
+                await _supabase.from('typing_results').insert([{ student_id: currentUser.email, mode: CURRENT_MODE, wpm: parseInt(wpmElement.innerText), accuracy: parseInt(document.getElementById('accuracy-log').innerText), missed_keys: errorMap }]);
+                fetchPersonalLog();
+            } catch (err) {}
+        }
 
         function resetTest() {
             clearInterval(timerInterval);
             keystrokeCount = 0; correctKeystrokeCount = 0; rawErrorCount = 0; netErrorCount = 0; currentIndex = 0;
             startTime = null; isTestFinished = false; timeRemaining = TIME_LIMIT;
             if (!isRevengeMode) errorMap = {};
-            wpmElement.innerText = 0; accuracyElement.innerText = "100%"; timeElement.innerText = timeRemaining;
-            timeElement.classList.remove('timer-warning');
-            modalOverlay.style.display = 'none';
+            document.body.classList.remove('is-typing');
+            document.getElementById('modal-overlay').style.display = 'none';
             loadLesson();
         }
 
-        timeButtons.forEach(btn => btn.addEventListener('click', function() {
-            timeButtons.forEach(b => { b.classList.remove('active', 'kinetic-gradient', 'text-white'); b.classList.add('border-slate-100'); });
-            this.classList.add('active', 'kinetic-gradient', 'text-white');
-            TIME_LIMIT = parseInt(this.dataset.time);
-            resetTest(); this.blur();
-        }));
-
-        modeButtons.forEach(btn => btn.addEventListener('click', function() {
-            modeButtons.forEach(b => { b.classList.remove('active', 'bg-white', 'shadow-sm', 'text-primary'); b.classList.add('text-secondary'); });
-            this.classList.add('active', 'bg-white', 'shadow-sm', 'text-primary');
-            CURRENT_MODE = this.dataset.mode;
-            resetTest(); this.blur();
-        }));
-
-        document.getElementById('logout-btn').onclick = async () => {
-            await _supabase.auth.signOut();
-            window.location.href = 'login.html';
-        };
+        document.getElementById('logout-btn').onclick = async () => { await _supabase.auth.signOut(); window.location.href = 'login.html'; };
         document.getElementById('modal-restart-btn').onclick = resetTest;
+        loadLesson();
     </script>
 </body>
 </html>
