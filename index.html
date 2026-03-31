@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>I-SHARK Kinetic | Surgical V2.0</title>
+    <title>I-SHARK Kinetic | Surgical V2.1</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700" rel="stylesheet"/>
@@ -26,23 +26,23 @@
         }
     </script>
     <style>
-        /* 1. PROFESSIONAL SPACING ENGINE */
+        /* 1. LAYOUT ENGINE */
+        #typing-container-wrapper {
+            position: relative; /* Anchor for the absolute caret */
+            overflow: hidden;
+        }
+
         #typing-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.6em; /* Perfect word spacing */
+            gap: 0.6em; 
             align-content: flex-start;
-            position: relative;
-            line-height: 1.5;
+            line-height: 1.6;
             font-size: 1.5rem;
             min-height: 250px;
-            transition: all 0.3s ease;
         }
 
-        .word {
-            display: flex;
-            position: relative;
-        }
+        .word { display: flex; position: relative; }
 
         .letter {
             position: relative;
@@ -50,16 +50,19 @@
             transition: color 0.1s;
         }
 
-        /* 2. THE LIQUID CARET */
+        /* 2. THE LIQUID CARET (HARD FIXED) */
         #caret {
             position: absolute;
             width: 2px;
-            height: 1.3em;
+            height: 1.5em;
             background-color: #00113a;
-            transition: left 0.1s cubic-bezier(0.4, 0, 0.2, 1), top 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Transition set to 'all' for smooth sliding in every direction */
+            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 0 10px rgba(0, 17, 58, 0.3);
-            z-index: 50;
+            z-index: 100;
             pointer-events: none;
+            left: 0;
+            top: 0;
             display: none;
         }
         .dark #caret { background-color: #7afbb1; box-shadow: 0 0 10px #7afbb1; }
@@ -71,16 +74,14 @@
         .pending { color: #cbd5e1; }
         .dark .pending { color: #334155; }
 
-        /* 4. UI BLACKOUT (IMMERSION) */
+        /* 4. UI BLACKOUT */
         aside, header, .stats-grid, #personal-log-list { transition: opacity 0.8s ease; }
         .is-typing aside, .is-typing header, .is-typing .stats-grid, .is-typing #personal-log-list { 
             opacity: 0.01; pointer-events: none; 
         }
 
-        /* DARK MODE UI OVERRIDES */
         .dark body { background-color: #020617; color: #f8fafc; }
         .dark aside, .dark .bg-white { background-color: #0f172a; border-color: #1e293b; }
-        .dark .stats-card { background-color: #0f172a; border-color: #1e293b; }
     </style>
 </head>
 <body class="bg-surface text-on-surface font-body overflow-x-hidden transition-colors duration-500">
@@ -107,8 +108,7 @@
             </div>
             <div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 opacity-60">
                 <p class="text-[8px] font-black uppercase tracking-[0.15em] text-secondary leading-loose dark:text-slate-400">
-                    Developed by <br>
-                    <span class="text-primary dark:text-white text-[10px]">Ali Raza Chadahar</span><br>
+                    Developed by Ali Raza Chadahar<br>
                     Director @ I-SHARK Institute
                 </p>
             </div>
@@ -124,39 +124,36 @@
         </header>
 
         <div class="p-12 max-w-5xl mx-auto space-y-8">
-            <!-- STATS GRID -->
             <div class="stats-grid grid grid-cols-4 gap-6">
-                <div class="stats-card bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase mb-1">Time</span>
                     <span id="time-log" class="text-4xl font-headline font-black tabular-nums">30</span>
                 </div>
-                <div class="stats-card bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase mb-1">Accuracy</span>
                     <span id="accuracy-log" class="text-4xl font-headline font-black tabular-nums">100%</span>
                 </div>
-                <div class="stats-card bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase mb-1">WPM</span>
                     <span id="wpm-log" class="text-4xl font-headline font-black tabular-nums">0</span>
                 </div>
-                <div class="stats-card bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase mb-1">Best</span>
                     <span id="best-wpm" class="text-4xl font-headline font-black tabular-nums">0</span>
                 </div>
             </div>
 
-            <!-- CORE ENGINE -->
-            <div id="typing-container-wrapper" class="bg-white dark:bg-slate-900/50 rounded-[2.5rem] p-12 border border-slate-100 dark:border-slate-800 shadow-2xl relative">
-                <div id="typing-container" class="font-mono italic text-slate-300">
-                    <div id="caret"></div>
-                </div>
+            <div id="typing-container-wrapper" class="bg-white dark:bg-slate-900/50 rounded-[2.5rem] p-12 border border-slate-100 dark:border-slate-800 shadow-2xl">
+                <div id="caret"></div>
+                <div id="typing-container" class="font-mono italic">
+                    </div>
             </div>
         </div>
     </main>
 
-    <!-- MODAL -->
     <div id="modal-overlay" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-md p-6">
         <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-12 text-center max-w-sm w-full">
-            <h2 class="font-headline font-black text-3xl mb-8 dark:text-white">Mission Complete</h2>
+            <h2 class="font-headline font-black text-3xl mb-8 dark:text-white uppercase">Mission Over</h2>
             <div class="grid grid-cols-2 gap-4 mb-8">
                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
                     <p class="text-[10px] font-bold uppercase mb-1 opacity-50">WPM</p>
@@ -167,7 +164,7 @@
                     <p id="final-accuracy" class="text-3xl font-black">0%</p>
                 </div>
             </div>
-            <button onclick="resetTest()" class="w-full bg-primary dark:bg-white dark:text-primary py-5 rounded-2xl font-black uppercase text-xs tracking-widest text-white">Next Flight (Tab)</button>
+            <button onclick="location.reload()" class="w-full bg-primary dark:bg-white dark:text-primary py-5 rounded-2xl font-black uppercase text-xs tracking-widest text-white">Next Flight (Tab)</button>
         </div>
     </div>
 
@@ -178,15 +175,15 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YmplempxamlrbG9xZ2Z2dXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODk4MDUsImV4cCI6MjA5MDQ2NTgwNX0.lj0Oumu8e63Q81bxvZ57-ALGaAP6IfIfCDBkqwXyvxM'
         );
 
-        // --- WEB AUDIO API: THE RELIABLE THUD ---
+        // --- WEB AUDIO API ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playThud() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(100, audioCtx.currentTime); // Low frequency "thud"
-            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            oscillator.frequency.setValueAtTime(100, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
@@ -195,7 +192,7 @@
         }
 
         let currentUser = null, bestWPM = parseInt(localStorage.getItem('ishark_best_wpm')) || 0;
-        let words = [], currentWordIndex = 0, currentLetterIndex = 0, isTestFinished = false, timerInterval = null, timeRemaining = 30;
+        let wordList = [], currentWordIdx = 0, currentLetterIdx = 0, isTestFinished = false, timerInterval = null, timeRemaining = 30;
         let keystrokes = 0, errors = 0, startTime = null;
 
         async function checkAuth() {
@@ -214,15 +211,16 @@
 
         function loadLesson() {
             const container = document.getElementById('typing-container');
-            container.innerHTML = '<div id="caret"></div>';
-            words = [];
+            container.innerHTML = '';
+            wordList = [];
             for (let i = 0; i < 60; i++) {
-                words.push(dict[Math.floor(Math.random() * dict.length)]);
+                wordList.push(dict[Math.floor(Math.random() * dict.length)]);
             }
 
-            words.forEach((word, wIdx) => {
+            wordList.forEach((word, wIdx) => {
                 const wordDiv = document.createElement('div');
                 wordDiv.className = 'word';
+                wordDiv.id = `w${wIdx}`;
                 word.split('').forEach((char, lIdx) => {
                     const span = document.createElement('span');
                     span.className = 'letter pending';
@@ -232,24 +230,35 @@
                 });
                 container.appendChild(wordDiv);
             });
-            currentWordIndex = 0; currentLetterIndex = 0;
-            setTimeout(updateCaret, 50);
+            currentWordIdx = 0; currentLetterIdx = 0;
+            // Delay caret to ensure DOM is drawn
+            setTimeout(updateCaret, 100);
         }
 
+        // --- HARD FIXED CARET POSITIONING ---
         function updateCaret() {
-            const activeLetter = document.getElementById(`w${currentWordIndex}l${currentLetterIndex}`);
             const caret = document.getElementById('caret');
+            const activeLetter = document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`);
+            const wrapper = document.getElementById('typing-container-wrapper');
+            
             if (activeLetter) {
+                const letterRect = activeLetter.getBoundingClientRect();
+                const wrapperRect = wrapper.getBoundingClientRect();
+
+                // Calculate position relative to the padded wrapper
+                const x = letterRect.left - wrapperRect.left;
+                const y = letterRect.top - wrapperRect.top;
+
                 caret.style.display = 'block';
-                caret.style.left = activeLetter.offsetLeft + 'px';
-                caret.style.top = activeLetter.offsetTop + 'px';
+                caret.style.transform = `translate(${x}px, ${y}px)`;
             }
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') { e.preventDefault(); resetTest(); return; }
+            if (e.key === 'Tab') { e.preventDefault(); location.reload(); return; }
             if (isTestFinished) return;
 
+            // Start Logic
             if (!startTime && e.key.length === 1) {
                 startTime = new Date();
                 document.body.classList.add('is-typing');
@@ -260,14 +269,13 @@
                 }, 1000);
             }
 
-            const activeWord = words[currentWordIndex];
-            const activeSpan = document.getElementById(`w${currentWordIndex}l${currentLetterIndex}`);
+            const activeWord = wordList[currentWordIdx];
+            const activeSpan = document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`);
 
             if (e.key === 'Backspace') {
-                if (currentLetterIndex > 0) {
-                    currentLetterIndex--;
-                    const prevSpan = document.getElementById(`w${currentWordIndex}l${currentLetterIndex}`);
-                    prevSpan.className = 'letter pending';
+                if (currentLetterIdx > 0) {
+                    currentLetterIdx--;
+                    document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`).className = 'letter pending';
                     updateCaret();
                 }
                 return;
@@ -275,9 +283,9 @@
 
             if (e.key === ' ') {
                 e.preventDefault();
-                if (currentWordIndex < words.length - 1) {
-                    currentWordIndex++;
-                    currentLetterIndex = 0;
+                if (currentWordIdx < wordList.length - 1) {
+                    currentWordIdx++;
+                    currentLetterIdx = 0;
                     updateCaret();
                 }
                 return;
@@ -285,27 +293,22 @@
 
             if (e.key.length === 1) {
                 keystrokes++;
-                if (e.key === activeWord[currentLetterIndex]) {
-                    activeSpan.className = 'letter correct';
-                } else {
-                    activeSpan.className = 'letter incorrect';
-                    errors++;
-                    playThud(); // THE SYNTH THUD
+                if (activeSpan) {
+                    if (e.key === activeWord[currentLetterIdx]) {
+                        activeSpan.className = 'letter correct';
+                    } else {
+                        activeSpan.className = 'letter incorrect';
+                        errors++;
+                        playThud();
+                    }
+                    currentLetterIdx++;
+                    updateCaret();
+                    calculateStats();
                 }
-                currentLetterIndex++;
-                
-                // If word finished, wait for space
-                if (currentLetterIndex >= activeWord.length) {
-                    // Logic to jump word automatically or wait for space? 
-                    // Let's force space for professional feel.
-                }
-
-                updateCaret();
-                calculateLiveStats();
             }
         });
 
-        function calculateLiveStats() {
+        function calculateStats() {
             const mins = (new Date() - startTime) / 60000;
             const wpm = Math.round(((keystrokes - errors) / 5) / mins) || 0;
             const acc = Math.round(((keystrokes - errors) / keystrokes) * 100) || 100;
@@ -318,33 +321,29 @@
             clearInterval(timerInterval);
             document.body.classList.remove('is-typing');
             
-            const finalWPM = document.getElementById('wpm-log').innerText;
-            const finalAcc = document.getElementById('accuracy-log').innerText;
+            const wpm = document.getElementById('wpm-log').innerText;
+            const acc = document.getElementById('accuracy-log').innerText;
             
-            document.getElementById('final-wpm').innerText = finalWPM;
-            document.getElementById('final-accuracy').innerText = finalAcc;
+            document.getElementById('final-wpm').innerText = wpm;
+            document.getElementById('final-accuracy').innerText = acc;
             document.getElementById('modal-overlay').style.display = 'flex';
 
-            if (parseInt(finalWPM) > bestWPM) {
-                bestWPM = parseInt(finalWPM);
+            if (parseInt(wpm) > bestWPM) {
+                bestWPM = parseInt(wpm);
                 localStorage.setItem('ishark_best_wpm', bestWPM);
-                document.getElementById('best-wpm').innerText = bestWPM;
             }
 
             try {
                 await _supabase.from('typing_results').insert([{ 
-                    student_id: currentUser.email, wpm: parseInt(finalWPM), accuracy: parseInt(finalAcc)
+                    student_id: currentUser.email, wpm: parseInt(wpm), accuracy: parseInt(acc)
                 }]);
             } catch (err) {}
-        }
-
-        function resetTest() {
-            location.reload(); // Hard reset to ensure dark mode and audio context stay fresh
         }
 
         function toggleDarkMode() {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('ishark_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            setTimeout(updateCaret, 200); // Re-align caret after layout shift
         }
 
         if (localStorage.getItem('ishark_theme') === 'dark') document.documentElement.classList.add('dark');
