@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>I-SHARK Kinetic | Surgical V2.1</title>
+    <title>I-SHARK Kinetic | Surgical V3.0 Apex</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700" rel="stylesheet"/>
@@ -18,7 +18,7 @@
                         "secondary": "#545f72",
                         "surface": "#f7fafc",
                         "surface-dark": "#020617",
-                        "error": "#93000a"
+                        "accent": "#7afbb1"
                     },
                     fontFamily: { "headline": ["Space Grotesk"], "body": ["Inter"], "mono": ["JetBrains Mono"] },
                 },
@@ -26,60 +26,44 @@
         }
     </script>
     <style>
-        /* 1. LAYOUT ENGINE */
-        #typing-container-wrapper {
-            position: relative; /* Anchor for the absolute caret */
-            overflow: hidden;
-        }
-
+        /* 1. LAYOUT & SPACING */
+        #typing-container-wrapper { position: relative; overflow: hidden; }
         #typing-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.6em; 
-            align-content: flex-start;
-            line-height: 1.6;
-            font-size: 1.5rem;
-            min-height: 250px;
+            display: flex; flex-wrap: wrap; gap: 0.6em; 
+            align-content: flex-start; line-height: 1.6; font-size: 1.5rem; min-height: 250px;
         }
-
         .word { display: flex; position: relative; }
+        .letter { position: relative; display: inline-block; transition: color 0.1s; z-index: 5; }
 
-        .letter {
-            position: relative;
-            display: inline-block;
-            transition: color 0.1s;
-        }
-
-        /* 2. THE LIQUID CARET (HARD FIXED) */
+        /* 2. THE APEX CARET */
         #caret {
-            position: absolute;
-            width: 2px;
-            height: 1.5em;
-            background-color: #00113a;
-            /* Transition set to 'all' for smooth sliding in every direction */
-            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 0 10px rgba(0, 17, 58, 0.3);
-            z-index: 100;
-            pointer-events: none;
-            left: 0;
-            top: 0;
-            display: none;
+            position: absolute; width: 2px; height: 1.5em; background-color: #00113a;
+            transition: all 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 15px rgba(0, 17, 58, 0.4); z-index: 100; pointer-events: none;
+            left: 0; top: 0; display: none;
         }
-        .dark #caret { background-color: #7afbb1; box-shadow: 0 0 10px #7afbb1; }
+        .dark #caret { background-color: #7afbb1; box-shadow: 0 0 15px #7afbb1; }
 
-        /* 3. SURGICAL COLORS */
+        /* 3. KINETIC PARTICLES */
+        .particle {
+            position: absolute; width: 4px; height: 4px; pointer-events: none;
+            border-radius: 1px; z-index: 10; animation: explode 0.5s ease-out forwards;
+        }
+        @keyframes explode {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+
+        /* 4. SURGICAL COLORS */
         .correct { color: #00113a !important; font-weight: 600; }
         .dark .correct { color: #f8fafc !important; }
         .incorrect { color: white !important; background-color: #93000a; border-radius: 2px; }
         .pending { color: #cbd5e1; }
         .dark .pending { color: #334155; }
 
-        /* 4. UI BLACKOUT */
-        aside, header, .stats-grid, #personal-log-list { transition: opacity 0.8s ease; }
-        .is-typing aside, .is-typing header, .is-typing .stats-grid, .is-typing #personal-log-list { 
-            opacity: 0.01; pointer-events: none; 
-        }
-
+        /* 5. UI BLACKOUT */
+        aside, header, .stats-grid { transition: opacity 0.8s ease; }
+        .is-typing aside, .is-typing header, .is-typing .stats-grid { opacity: 0.01; pointer-events: none; }
         .dark body { background-color: #020617; color: #f8fafc; }
         .dark aside, .dark .bg-white { background-color: #0f172a; border-color: #1e293b; }
     </style>
@@ -93,12 +77,10 @@
             </div>
             <span class="text-xl font-black italic tracking-tighter text-primary dark:text-white">I-SHARK</span>
         </div>
-
         <button onclick="toggleDarkMode()" class="flex items-center gap-3 p-3 w-full hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-all group">
             <span class="material-symbols-outlined dark:text-white">dark_mode</span>
             <span class="text-xs font-bold uppercase tracking-widest dark:text-white">Switch Mode</span>
         </button>
-
         <div class="mt-auto flex flex-col gap-2">
             <div id="admin-gate" class="hidden border-t border-slate-100 dark:border-slate-800 pt-2">
                 <a href="admin.html" class="flex items-center gap-3 p-3 w-full text-primary dark:text-white hover:bg-slate-100 rounded-lg transition-all">
@@ -107,7 +89,7 @@
                 </a>
             </div>
             <div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 opacity-60">
-                <p class="text-[8px] font-black uppercase tracking-[0.15em] text-secondary leading-loose dark:text-slate-400">
+                <p class="text-[8px] font-black uppercase tracking-[0.15em] text-secondary leading-loose dark:text-slate-400 text-center">
                     Developed by Ali Raza Chadahar<br>
                     Director @ I-SHARK Institute
                 </p>
@@ -145,8 +127,7 @@
 
             <div id="typing-container-wrapper" class="bg-white dark:bg-slate-900/50 rounded-[2.5rem] p-12 border border-slate-100 dark:border-slate-800 shadow-2xl">
                 <div id="caret"></div>
-                <div id="typing-container" class="font-mono italic">
-                    </div>
+                <div id="typing-container" class="font-mono italic"></div>
             </div>
         </div>
     </main>
@@ -175,20 +156,52 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YmplempxamlrbG9xZ2Z2dXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODk4MDUsImV4cCI6MjA5MDQ2NTgwNX0.lj0Oumu8e63Q81bxvZ57-ALGaAP6IfIfCDBkqwXyvxM'
         );
 
-        // --- WEB AUDIO API ---
+        // --- THE ZEN SOUNDSCAPE (SYNTH) ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playThud() {
+        
+        function playCorrectClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(100, audioCtx.currentTime);
-            gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.1);
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.05);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playErrorThud() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            oscillatorFreq = 80;
+            osc.frequency.setValueAtTime(oscillatorFreq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        // --- KINETIC PARTICLES ---
+        function spawnParticles(x, y) {
+            const wrapper = document.getElementById('typing-container-wrapper');
+            const color = document.documentElement.classList.contains('dark') ? '#7afbb1' : '#00113a';
+            for (let i = 0; i < 6; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.backgroundColor = color;
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                const dx = (Math.random() - 0.5) * 80;
+                const dy = (Math.random() - 0.5) * 80;
+                p.style.setProperty('--dx', `${dx}px`);
+                p.style.setProperty('--dy', `${dy}px`);
+                wrapper.appendChild(p);
+                setTimeout(() => p.remove(), 500);
+            }
         }
 
         let currentUser = null, bestWPM = parseInt(localStorage.getItem('ishark_best_wpm')) || 0;
@@ -213,14 +226,10 @@
             const container = document.getElementById('typing-container');
             container.innerHTML = '';
             wordList = [];
-            for (let i = 0; i < 60; i++) {
-                wordList.push(dict[Math.floor(Math.random() * dict.length)]);
-            }
-
+            for (let i = 0; i < 60; i++) wordList.push(dict[Math.floor(Math.random() * dict.length)]);
             wordList.forEach((word, wIdx) => {
                 const wordDiv = document.createElement('div');
                 wordDiv.className = 'word';
-                wordDiv.id = `w${wIdx}`;
                 word.split('').forEach((char, lIdx) => {
                     const span = document.createElement('span');
                     span.className = 'letter pending';
@@ -231,34 +240,29 @@
                 container.appendChild(wordDiv);
             });
             currentWordIdx = 0; currentLetterIdx = 0;
-            // Delay caret to ensure DOM is drawn
             setTimeout(updateCaret, 100);
         }
 
-        // --- HARD FIXED CARET POSITIONING ---
         function updateCaret() {
             const caret = document.getElementById('caret');
             const activeLetter = document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`);
             const wrapper = document.getElementById('typing-container-wrapper');
-            
             if (activeLetter) {
                 const letterRect = activeLetter.getBoundingClientRect();
                 const wrapperRect = wrapper.getBoundingClientRect();
-
-                // Calculate position relative to the padded wrapper
                 const x = letterRect.left - wrapperRect.left;
                 const y = letterRect.top - wrapperRect.top;
-
                 caret.style.display = 'block';
                 caret.style.transform = `translate(${x}px, ${y}px)`;
+                return {x, y};
             }
+            return null;
         }
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') { e.preventDefault(); location.reload(); return; }
             if (isTestFinished) return;
 
-            // Start Logic
             if (!startTime && e.key.length === 1) {
                 startTime = new Date();
                 document.body.classList.add('is-typing');
@@ -287,6 +291,7 @@
                     currentWordIdx++;
                     currentLetterIdx = 0;
                     updateCaret();
+                    playCorrectClick();
                 }
                 return;
             }
@@ -294,12 +299,15 @@
             if (e.key.length === 1) {
                 keystrokes++;
                 if (activeSpan) {
+                    const pos = updateCaret();
                     if (e.key === activeWord[currentLetterIdx]) {
                         activeSpan.className = 'letter correct';
+                        playCorrectClick();
+                        if (pos) spawnParticles(pos.x, pos.y);
                     } else {
                         activeSpan.className = 'letter incorrect';
                         errors++;
-                        playThud();
+                        playErrorThud();
                     }
                     currentLetterIdx++;
                     updateCaret();
@@ -320,34 +328,26 @@
             isTestFinished = true;
             clearInterval(timerInterval);
             document.body.classList.remove('is-typing');
-            
             const wpm = document.getElementById('wpm-log').innerText;
             const acc = document.getElementById('accuracy-log').innerText;
-            
             document.getElementById('final-wpm').innerText = wpm;
             document.getElementById('final-accuracy').innerText = acc;
             document.getElementById('modal-overlay').style.display = 'flex';
-
             if (parseInt(wpm) > bestWPM) {
                 bestWPM = parseInt(wpm);
                 localStorage.setItem('ishark_best_wpm', bestWPM);
             }
-
             try {
-                await _supabase.from('typing_results').insert([{ 
-                    student_id: currentUser.email, wpm: parseInt(wpm), accuracy: parseInt(acc)
-                }]);
+                await _supabase.from('typing_results').insert([{ student_id: currentUser.email, wpm: parseInt(wpm), accuracy: parseInt(acc) }]);
             } catch (err) {}
         }
 
         function toggleDarkMode() {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('ishark_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-            setTimeout(updateCaret, 200); // Re-align caret after layout shift
+            setTimeout(updateCaret, 200);
         }
-
         if (localStorage.getItem('ishark_theme') === 'dark') document.documentElement.classList.add('dark');
-        
         loadLesson();
     </script>
 </body>
