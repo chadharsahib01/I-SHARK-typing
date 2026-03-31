@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>I-SHARK Kinetic | Sovereign V3.1</title>
+    <title>I-SHARK Kinetic | Dominion V4.0</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700" rel="stylesheet"/>
@@ -27,7 +27,7 @@
         }
     </script>
     <style>
-        #typing-container-wrapper { position: relative; overflow: hidden; }
+        #typing-container-wrapper { position: relative; overflow: hidden; transition: all 0.3s ease; }
         #typing-container {
             display: flex; flex-wrap: wrap; gap: 0.6em; 
             align-content: flex-start; line-height: 1.6; font-size: 1.5rem; min-height: 250px;
@@ -35,6 +35,7 @@
         .word { display: flex; position: relative; }
         .letter { position: relative; display: inline-block; transition: color 0.1s; z-index: 5; }
 
+        /* THE DOMINION CARET */
         #caret {
             position: absolute; width: 2px; height: 1.5em; background-color: #00113a;
             transition: all 0.08s cubic-bezier(0.4, 0, 0.2, 1);
@@ -42,6 +43,16 @@
             left: 0; top: 0; display: none;
         }
         .dark #caret { background-color: #7afbb1; box-shadow: 0 0 15px #7afbb1; }
+        
+        /* FLOW STATE GLOW */
+        .flow-state #caret { background-color: #7afbb1 !important; box-shadow: 0 0 25px #7afbb1 !important; width: 4px; }
+        .flow-state #typing-container-wrapper { border-color: #7afbb1 !important; box-shadow: 0 0 40px rgba(122, 251, 177, 0.1); }
+
+        #ghost-caret {
+            position: absolute; width: 2px; height: 1.5em; background-color: #94a3b8;
+            opacity: 0.3; transition: all 0.15s linear; z-index: 50; pointer-events: none;
+            left: 0; top: 0; display: none;
+        }
 
         .particle {
             position: absolute; width: 4px; height: 4px; pointer-events: none;
@@ -64,20 +75,21 @@
         }
         .dark body { background-color: #020617; color: #f8fafc; }
         .dark aside, .dark .bg-white { background-color: #0f172a; border-color: #1e293b; }
-
-        .sidebar-logo-container { transition: transform 0.3s ease; }
-        .sidebar-logo-container:hover { transform: scale(1.05); }
     </style>
 </head>
 <body class="bg-surface text-on-surface font-body overflow-x-hidden transition-colors duration-500">
 
-    <aside class="h-screen w-64 fixed left-0 top-0 z-40 bg-white flex flex-col p-6 gap-4 font-headline border-r border-slate-100">
+    <aside class="h-screen w-64 fixed left-0 top-0 z-40 bg-white dark:bg-slate-900 flex flex-col p-6 gap-4 font-headline border-r border-slate-100 dark:border-slate-800">
         <div class="mb-10 flex items-center gap-3">
-            <!-- BRANDED LOGO IMPLEMENTATION -->
-            <div class="sidebar-logo-container w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-sm border border-slate-50">
+            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-sm border border-slate-50 dark:border-slate-800">
                 <img src="logo.png" alt="I-SHARK" class="w-full h-full object-contain">
             </div>
             <span class="text-xl font-black italic tracking-tighter text-primary dark:text-white">I-SHARK</span>
+        </div>
+        
+        <div class="px-2 py-1 bg-accent/10 rounded-lg mb-4 text-center">
+            <p class="text-[9px] font-black uppercase text-accent tracking-widest">Pilot Streak</p>
+            <p id="live-streak" class="text-xl font-black text-primary dark:text-white">0</p>
         </div>
 
         <button onclick="toggleDarkMode()" class="flex items-center gap-3 p-3 w-full hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-all group">
@@ -111,38 +123,35 @@
 
     <main class="ml-64 min-h-screen">
         <header class="sticky top-0 z-30 glass-header h-20 flex justify-between items-center px-12 border-b border-slate-100 dark:border-slate-800">
-            <h1 class="font-headline font-bold text-xl text-primary dark:text-white uppercase tracking-widest">Student Name <span id="pilot-name">...</span></h1>
+            <h1 class="font-headline font-bold text-xl text-primary dark:text-white uppercase tracking-widest">Student Name-<span id="pilot-name">...</span></h1>
             <div class="w-10 h-10 rounded-full bg-slate-200 ring-2 ring-primary/5 overflow-hidden">
                 <img id="pilot-avatar" src="" alt="Avatar"/>
             </div>
         </header>
 
         <div class="p-12 max-w-5xl mx-auto space-y-8">
-            <!-- STATS GRID -->
             <div class="stats-grid grid grid-cols-4 gap-6">
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center shadow-sm">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase mb-1">Timer</span>
                     <span id="time-log" class="text-4xl font-headline font-black tabular-nums">30</span>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center shadow-sm">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase mb-1">Accuracy</span>
                     <span id="accuracy-log" class="text-4xl font-headline font-black tabular-nums">100%</span>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center shadow-sm">
-                    <span class="text-[10px] font-bold text-secondary uppercase mb-1">Live Speed</span>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
+                    <span class="text-[10px] font-bold text-secondary uppercase mb-1">Speed</span>
                     <span id="wpm-log" class="text-4xl font-headline font-black tabular-nums">0</span>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center shadow-sm">
-                    <span class="text-[10px] font-bold text-secondary uppercase mb-1">Session Avg</span>
-                    <span id="session-avg-acc" class="text-4xl font-headline font-black tabular-nums">--%</span>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
+                    <span class="text-[10px] font-bold text-secondary uppercase mb-1">Consistency</span>
+                    <span id="consistency-log" class="text-4xl font-headline font-black tabular-nums">0%</span>
                 </div>
             </div>
 
-            <!-- MODE CONTROLS -->
             <div class="mode-row flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
                 <div class="flex gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl">
                     <button class="mode-btn active px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all bg-primary text-white" data-mode="standard">Standard</button>
-                    <button class="mode-btn px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-secondary" data-mode="data-entry">Data Entry</button>
                     <button id="revenge-btn" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-red-400 border border-red-100 dark:border-red-900 hidden" onclick="toggleRevenge()">Revenge Mode</button>
                 </div>
                 <div class="flex gap-2">
@@ -154,17 +163,16 @@
 
             <div class="grid grid-cols-3 gap-8">
                 <div class="col-span-2">
-                    <div id="typing-container-wrapper" class="bg-white dark:bg-slate-900/50 rounded-[2.5rem] p-12 border border-slate-100 dark:border-slate-800 shadow-2xl min-h-[300px]">
+                    <div id="typing-container-wrapper" class="bg-white dark:bg-slate-900/50 rounded-[2.5rem] p-12 border border-slate-100 dark:border-slate-800 shadow-2xl min-h-[300px] border-2">
+                        <div id="ghost-caret"></div>
                         <div id="caret"></div>
                         <div id="typing-container" class="font-mono italic"></div>
                     </div>
                 </div>
                 <div class="col-span-1" id="personal-log-list">
-                    <div class="bg-primary p-8 rounded-[2rem] text-white h-full shadow-xl">
+                    <div class="bg-primary p-8 rounded-[2rem] text-white h-full shadow-xl border border-white/5">
                         <h3 class="font-headline font-bold text-xs uppercase tracking-widest text-accent mb-8">Career Log</h3>
-                        <div id="personal-log-list-content" class="space-y-6">
-                            <p class="text-[10px] opacity-40 uppercase italic">Scanning...</p>
-                        </div>
+                        <div id="personal-log-list-content" class="space-y-6"></div>
                     </div>
                 </div>
             </div>
@@ -173,18 +181,20 @@
 
     <div id="modal-overlay" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-md p-6">
         <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-12 text-center max-w-sm w-full shadow-2xl">
-            <h2 class="font-headline font-black text-3xl mb-8 dark:text-white uppercase">Mission Over</h2>
+            <p id="rank-title" class="text-accent text-[10px] font-black uppercase tracking-[0.3em] mb-2">New Rank Unlocked</p>
+            <h2 id="final-rank" class="font-headline font-black text-4xl mb-8 dark:text-white uppercase tracking-tighter">PILOT</h2>
+            
             <div class="grid grid-cols-2 gap-4 mb-8">
                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
                     <p class="text-[10px] font-bold uppercase mb-1 opacity-50">WPM</p>
                     <p id="final-wpm" class="text-3xl font-black">0</p>
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
-                    <p class="text-[10px] font-bold uppercase mb-1 opacity-50">Acc</p>
+                    <p class="text-[10px] font-bold uppercase mb-1 opacity-50">Accuracy</p>
                     <p id="final-accuracy" class="text-3xl font-black">0%</p>
                 </div>
             </div>
-            <button onclick="resetTest()" class="w-full bg-primary dark:bg-white dark:text-primary py-5 rounded-2xl font-black uppercase text-xs tracking-widest text-white shadow-lg">Next Flight (Tab)</button>
+            <button onclick="resetTest()" class="w-full bg-primary dark:bg-white dark:text-primary py-5 rounded-2xl font-black uppercase text-xs tracking-widest text-white shadow-lg">Relaunch Mission (Tab)</button>
         </div>
     </div>
 
@@ -221,17 +231,18 @@
             osc.start(); osc.stop(audioCtx.currentTime + 0.15);
         }
 
-        function spawnParticles(x, y) {
+        function spawnParticles(x, y, isFlow = false) {
             const wrapper = document.getElementById('typing-container-wrapper');
-            const color = document.documentElement.classList.contains('dark') ? '#7afbb1' : '#00113a';
-            for (let i = 0; i < 6; i++) {
+            const color = isFlow ? '#7afbb1' : (document.documentElement.classList.contains('dark') ? '#f8fafc' : '#00113a');
+            const count = isFlow ? 12 : 6;
+            for (let i = 0; i < count; i++) {
                 const p = document.createElement('div');
                 p.className = 'particle';
                 p.style.backgroundColor = color;
                 p.style.left = x + 'px';
                 p.style.top = y + 'px';
-                const dx = (Math.random() - 0.5) * 80;
-                const dy = (Math.random() - 0.5) * 80;
+                const dx = (Math.random() - 0.5) * (isFlow ? 120 : 80);
+                const dy = (Math.random() - 0.5) * (isFlow ? 120 : 80);
                 p.style.setProperty('--dx', `${dx}px`);
                 p.style.setProperty('--dy', `${dy}px`);
                 wrapper.appendChild(p);
@@ -241,7 +252,9 @@
 
         let currentUser = null, bestWPM = parseInt(localStorage.getItem('ishark_best_wpm')) || 0, errorMap = {}, isRevengeMode = false;
         let wordList = [], currentWordIdx = 0, currentLetterIdx = 0, isTestFinished = false, timerInterval = null, timeRemaining = 30, TIME_LIMIT = 30;
-        let keystrokes = 0, errors = 0, startTime = null, CURRENT_MODE = "standard";
+        let keystrokes = 0, errors = 0, startTime = null, CURRENT_MODE = "standard", streak = 0, wpmHistory = [];
+
+        let ghostInterval = null, ghostWordIdx = 0, ghostLetterIdx = 0;
 
         async function checkAuth() {
             const { data: { user } } = await _supabase.auth.getUser();
@@ -284,8 +297,7 @@
                 activeDict = dict.filter(word => Object.keys(errorMap).some(key => word.includes(key)));
                 if(activeDict.length === 0) activeDict = dict;
             }
-
-            for (let i = 0; i < 60; i++) wordList.push(activeDict[Math.floor(Math.random() * activeDict.length)]);
+            for (let i = 0; i < 80; i++) wordList.push(activeDict[Math.floor(Math.random() * activeDict.length)]);
             wordList.forEach((word, wIdx) => {
                 const wordDiv = document.createElement('div');
                 wordDiv.className = 'word';
@@ -299,6 +311,7 @@
                 container.appendChild(wordDiv);
             });
             currentWordIdx = 0; currentLetterIdx = 0;
+            ghostWordIdx = 0; ghostLetterIdx = 0;
             setTimeout(updateCaret, 100);
         }
 
@@ -318,32 +331,60 @@
             return null;
         }
 
+        function updateGhostCaret() {
+            const gCaret = document.getElementById('ghost-caret');
+            const activeLetter = document.getElementById(`w${ghostWordIdx}l${ghostLetterIdx}`);
+            const wrapper = document.getElementById('typing-container-wrapper');
+            if (activeLetter) {
+                const letterRect = activeLetter.getBoundingClientRect();
+                const wrapperRect = wrapper.getBoundingClientRect();
+                gCaret.style.display = 'block';
+                gCaret.style.transform = `translate(${letterRect.left - wrapperRect.left}px, ${letterRect.top - wrapperRect.top}px)`;
+            }
+        }
+
+        function startGhost() {
+            if (bestWPM < 15) return;
+            const msPerChar = 60000 / (bestWPM * 5); 
+            ghostInterval = setInterval(() => {
+                if (isTestFinished) return;
+                ghostLetterIdx++;
+                if (ghostLetterIdx >= wordList[ghostWordIdx].length) {
+                    ghostWordIdx++;
+                    ghostLetterIdx = 0;
+                }
+                if (ghostWordIdx >= wordList.length) clearInterval(ghostInterval);
+                updateGhostCaret();
+            }, msPerChar);
+        }
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') { e.preventDefault(); resetTest(); return; }
             if (isTestFinished) return;
-
             if (!startTime && e.key.length === 1) {
                 startTime = new Date();
                 document.body.classList.add('is-typing');
+                startGhost();
                 timerInterval = setInterval(() => {
                     timeRemaining--;
                     document.getElementById('time-log').innerText = timeRemaining;
                     if (timeRemaining <= 0) endTest();
                 }, 1000);
             }
-
             const activeWord = wordList[currentWordIdx];
             const activeSpan = document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`);
-
+            
             if (e.key === 'Backspace') {
                 if (currentLetterIdx > 0) {
                     currentLetterIdx--;
                     document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`).className = 'letter pending';
+                    streak = 0;
+                    document.getElementById('live-streak').innerText = streak;
+                    document.body.classList.remove('flow-state');
                     updateCaret();
                 }
                 return;
             }
-
             if (e.key === ' ') {
                 e.preventDefault();
                 if (currentWordIdx < wordList.length - 1) {
@@ -354,7 +395,6 @@
                 }
                 return;
             }
-
             if (e.key.length === 1) {
                 keystrokes++;
                 if (activeSpan) {
@@ -362,14 +402,19 @@
                     if (e.key === activeWord[currentLetterIdx]) {
                         activeSpan.className = 'letter correct';
                         playCorrectClick();
-                        if (pos) spawnParticles(pos.x, pos.y);
+                        streak++;
+                        if (streak >= 20) document.body.classList.add('flow-state');
+                        if (pos) spawnParticles(pos.x, pos.y, streak >= 20);
                     } else {
                         activeSpan.className = 'letter incorrect';
                         errors++;
+                        streak = 0;
+                        document.body.classList.remove('flow-state');
                         playErrorThud();
                         errorMap[activeWord[currentLetterIdx]] = (errorMap[activeWord[currentLetterIdx]] || 0) + 1;
                         document.getElementById('revenge-btn').classList.remove('hidden');
                     }
+                    document.getElementById('live-streak').innerText = streak;
                     currentLetterIdx++;
                     updateCaret();
                     calculateStats();
@@ -381,16 +426,38 @@
             const mins = (new Date() - startTime) / 60000;
             const wpm = Math.round(((keystrokes - errors) / 5) / mins) || 0;
             const acc = Math.round(((keystrokes - errors) / keystrokes) * 100) || 100;
+            wpmHistory.push(wpm);
+            
+            // Consistency = 100 - (Standard Deviation Approximation)
+            const avgWpm = wpmHistory.reduce((a, b) => a + b, 0) / wpmHistory.length;
+            const diffs = wpmHistory.map(v => Math.abs(v - avgWpm));
+            const consistency = Math.max(0, 100 - (diffs.reduce((a, b) => a + b, 0) / wpmHistory.length) * 2);
+
             document.getElementById('wpm-log').innerText = wpm;
             document.getElementById('accuracy-log').innerText = acc + "%";
+            document.getElementById('consistency-log').innerText = Math.round(consistency) + "%";
+        }
+
+        function getRank(wpm, acc) {
+            if (acc < 70) return "RECRUIT";
+            if (wpm < 25) return "PILOT";
+            if (wpm < 45) return "ACE";
+            if (wpm < 70) return "PHANTOM";
+            return "SPECTRE";
         }
 
         async function endTest() {
             isTestFinished = true;
             clearInterval(timerInterval);
+            clearInterval(ghostInterval);
             document.body.classList.remove('is-typing');
+            document.body.classList.remove('flow-state');
+            
             const wpm = parseInt(document.getElementById('wpm-log').innerText);
             const acc = parseInt(document.getElementById('accuracy-log').innerText);
+            const rank = getRank(wpm, acc);
+
+            document.getElementById('final-rank').innerText = rank;
             document.getElementById('final-wpm').innerText = wpm;
             document.getElementById('final-accuracy').innerText = acc + "%";
             document.getElementById('modal-overlay').style.display = 'flex';
@@ -402,19 +469,26 @@
             }
 
             try {
-                await _supabase.from('typing_results').insert([{ student_id: currentUser.email, wpm: wpm, accuracy: acc, missed_keys: errorMap }]);
+                await _supabase.from('typing_results').insert([{ 
+                    student_id: currentUser.email, wpm: wpm, accuracy: acc, missed_keys: errorMap 
+                }]);
                 fetchPersonalLog();
             } catch (err) {}
         }
 
         function resetTest() {
             clearInterval(timerInterval);
-            keystrokes = 0; errors = 0; currentWordIdx = 0; currentLetterIdx = 0;
+            clearInterval(ghostInterval);
+            keystrokes = 0; errors = 0; streak = 0; currentWordIdx = 0; currentLetterIdx = 0;
+            ghostWordIdx = 0; ghostLetterIdx = 0; wpmHistory = [];
             startTime = null; isTestFinished = false; timeRemaining = TIME_LIMIT;
             document.getElementById('time-log').innerText = TIME_LIMIT;
             document.getElementById('wpm-log').innerText = "0";
             document.getElementById('accuracy-log').innerText = "100%";
+            document.getElementById('consistency-log').innerText = "0%";
+            document.getElementById('live-streak').innerText = "0";
             document.body.classList.remove('is-typing');
+            document.body.classList.remove('flow-state');
             document.getElementById('modal-overlay').style.display = 'none';
             if (!isRevengeMode) errorMap = {};
             loadLesson();
@@ -433,21 +507,11 @@
             resetTest();
         }
 
-        // DURATION & MODE LISTENERS
         document.querySelectorAll('.time-btn').forEach(btn => {
             btn.onclick = (e) => {
                 document.querySelectorAll('.time-btn').forEach(b => b.className = "time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all");
                 e.target.className = "time-btn active px-4 py-2 rounded-lg text-xs font-bold bg-primary text-white shadow-md transition-all";
                 TIME_LIMIT = parseInt(e.target.dataset.time);
-                resetTest();
-            };
-        });
-
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                document.querySelectorAll('.mode-btn').forEach(b => b.className = "mode-btn px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-secondary");
-                e.target.className = "mode-btn active px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all bg-primary text-white";
-                CURRENT_MODE = e.target.dataset.mode;
                 resetTest();
             };
         });
