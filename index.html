@@ -3,11 +3,12 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>I-SHARK Kinetic | Vanguard V5.0</title>
+    <title>I-SHARK Kinetic | Vanguard V6.0</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700" rel="stylesheet"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="icon" type="image/png" href="logo.png">
     <script id="tailwind-config">
         tailwind.config = {
@@ -28,54 +29,115 @@
         }
     </script>
     <style>
-        #typing-container-wrapper { position: relative; overflow: hidden; transition: all 0.3s ease; }
+        /* =========================================================
+           SMOOTH LINE SCROLLING — lines scroll up, active line centered
+        ========================================================= */
+        #typing-container-wrapper {
+            position: relative; overflow: hidden;
+            transition: all 0.3s ease;
+            height: 260px; /* 3 visible lines */
+        }
+        #typing-lines-viewport {
+            position: relative;
+            transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        }
         #typing-container {
-            display: flex; flex-wrap: wrap; gap: 0.6em; 
-            align-content: flex-start; line-height: 1.6; font-size: 1.5rem; min-height: 250px;
+            display: flex; flex-wrap: wrap; gap: 0.6em;
+            align-content: flex-start; line-height: 2.2;
+            font-size: 1.5rem; padding: 0;
         }
         .word { display: flex; position: relative; }
         .letter { position: relative; display: inline-block; transition: color 0.1s; z-index: 5; }
+        #typing-container { user-select: none; -webkit-user-select: none; }
 
+        /* =========================================================
+           CARET — supports line / block / underline & blink/solid/smooth
+        ========================================================= */
         #caret {
-            position: absolute; width: 2px; height: 1.5em; background-color: #00113a;
+            position: absolute;
+            background-color: #00113a;
             transition: all 0.08s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 0 15px rgba(0, 17, 58, 0.4); z-index: 100; pointer-events: none;
+            box-shadow: 0 0 15px rgba(0,17,58,0.4);
+            z-index: 100; pointer-events: none;
             left: 0; top: 0; display: none;
         }
-        .dark #caret { background-color: #7afbb1; box-shadow: 0 0 15px #7afbb1; }
-        
-        .flow-state #caret { background-color: #7afbb1 !important; box-shadow: 0 0 25px #7afbb1 !important; width: 4px; }
-        .flow-state #typing-container-wrapper { border-color: #7afbb1 !important; box-shadow: 0 0 40px rgba(122, 251, 177, 0.1); }
+        .caret-line   #caret { width: 2px; height: 1.5em; }
+        .caret-block  #caret { width: 0.7em; height: 1.5em; opacity: 0.5; border-radius: 2px; }
+        .caret-under  #caret { width: 0.7em; height: 3px; margin-top: 1.35em; border-radius: 2px; }
+        .caret-blink  #caret { animation: caretBlink 1s step-end infinite; }
+        .caret-solid  #caret { animation: none; opacity: 1; }
+        .caret-smooth #caret { animation: caretFade 1s ease-in-out infinite; }
+        @keyframes caretBlink { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes caretFade  { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
+        .dark #caret { background-color: #7afbb1; box-shadow: 0 0 15px #7afbb1; }
+        .flow-state #caret { background-color: #7afbb1 !important; box-shadow: 0 0 25px #7afbb1 !important; }
+        .caret-line.flow-state #caret { width: 4px; }
+
+        /* Ghost caret */
         #ghost-caret {
             position: absolute; width: 2px; height: 1.5em; background-color: #94a3b8;
             opacity: 0.3; transition: all 0.15s linear; z-index: 50; pointer-events: none;
             left: 0; top: 0; display: none;
         }
+        .flow-state #typing-container-wrapper { border-color: #7afbb1 !important; box-shadow: 0 0 40px rgba(122,251,177,0.1); }
 
-        .particle {
-            position: absolute; width: 4px; height: 4px; pointer-events: none;
-            border-radius: 1px; z-index: 10; animation: explode 0.5s ease-out forwards;
-        }
-        @keyframes explode {
-            0% { transform: translate(0, 0) scale(1); opacity: 1; }
-            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
-        }
-
+        /* Letter states */
         .correct { color: #00113a !important; font-weight: 600; }
         .dark .correct { color: #f8fafc !important; }
         .incorrect { color: white !important; background-color: #93000a; border-radius: 2px; }
         .pending { color: #cbd5e1; }
         .dark .pending { color: #334155; }
 
-        aside, header, .stats-grid, #personal-log-list, .mode-row { transition: opacity 0.8s ease; }
-        .is-typing aside, .is-typing header, .is-typing .stats-grid, .is-typing #personal-log-list, .is-typing .mode-row { 
-            opacity: 0.01; pointer-events: none; 
+        /* Particles */
+        .particle {
+            position: absolute; width: 4px; height: 4px; pointer-events: none;
+            border-radius: 1px; z-index: 10; animation: explode 0.5s ease-out forwards;
         }
+        @keyframes explode {
+            0%   { transform: translate(0,0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx),var(--dy)) scale(0); opacity: 0; }
+        }
+
+        /* Typing focus fade */
+        aside, header, .stats-grid, #personal-log-list, .mode-row, .sidebar-extras {
+            transition: opacity 0.8s ease;
+        }
+        .is-typing aside, .is-typing header, .is-typing .stats-grid,
+        .is-typing #personal-log-list, .is-typing .mode-row, .is-typing .sidebar-extras {
+            opacity: 0.01; pointer-events: none;
+        }
+
+        /* Dark theme */
         .dark body { background-color: #020617; color: #f8fafc; }
         .dark aside, .dark .bg-white { background-color: #0f172a; border-color: #1e293b; }
 
-        /* THE PILOT ID TEMPLATE (HIDDEN FROM VIEW) */
+        /* =========================================================
+           THEMES
+        ========================================================= */
+        /* Matrix Terminal */
+        body.theme-matrix { background-color: #000; color: #00ff41; }
+        body.theme-matrix #typing-container-wrapper { background: #000 !important; border-color: #00ff41 !important; }
+        body.theme-matrix .pending { color: #003b0f !important; }
+        body.theme-matrix .correct { color: #00ff41 !important; }
+        body.theme-matrix #caret { background-color: #00ff41 !important; box-shadow: 0 0 15px #00ff41; }
+        body.theme-matrix aside, body.theme-matrix .bg-white { background-color: #0a0a0a !important; border-color: #00ff41 !important; color: #00ff41; }
+        body.theme-matrix header { background-color: #050505 !important; border-color: #00ff41 !important; }
+        body.theme-matrix .text-primary { color: #00ff41 !important; }
+        body.theme-matrix .bg-primary { background-color: #00ff41 !important; color: #000 !important; }
+
+        /* Deep Ocean */
+        body.theme-ocean { background-color: #020c1b; color: #64ffda; }
+        body.theme-ocean #typing-container-wrapper { background: #0a192f !important; border-color: #64ffda !important; }
+        body.theme-ocean .pending { color: #1a3a4a !important; }
+        body.theme-ocean .correct { color: #64ffda !important; }
+        body.theme-ocean #caret { background-color: #64ffda !important; box-shadow: 0 0 15px #64ffda; }
+        body.theme-ocean aside, body.theme-ocean .bg-white { background-color: #0a192f !important; border-color: #1e3a5f !important; color: #64ffda; }
+        body.theme-ocean header { background-color: #0a192f !important; border-color: #1e3a5f !important; }
+        body.theme-ocean .text-primary { color: #64ffda !important; }
+        body.theme-ocean .bg-primary { background-color: #0a3d62 !important; }
+
+        /* PILOT ID TEMPLATE */
         #pilot-id-template {
             position: absolute; left: -9999px; top: -9999px;
             width: 500px; height: 300px; background: #00113a; color: white;
@@ -83,54 +145,114 @@
             display: flex; flex-direction: column; justify-content: space-between;
             border: 2px solid #7afbb1;
         }
+
+        /* Heatmap key */
+        .hk { border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            aside { transform: translateX(-100%); transition: transform 0.3s ease; }
+            aside.open { transform: translateX(0); }
+            main { margin-left: 0 !important; }
+            .grid-cols-3 { grid-template-columns: 1fr !important; }
+            #mobile-menu-btn { display: flex !important; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
     </style>
 </head>
-<body class="bg-surface text-on-surface font-body overflow-x-hidden transition-colors duration-500">
+<body class="bg-surface text-on-surface font-body overflow-x-hidden transition-colors duration-500 caret-line caret-blink">
 
+    <!-- PILOT ID TEMPLATE (HIDDEN) -->
     <div id="pilot-id-template">
         <div class="flex justify-between items-start">
             <div>
-                <img src="logo.png" style="height: 40px; margin-bottom: 10px;">
-                <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #7afbb1; font-weight: 800;">Certified Pilot</p>
+                <img src="logo.png" style="height:40px;margin-bottom:10px;">
+                <p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#7afbb1;font-weight:800;">Certified Pilot</p>
             </div>
-            <div style="text-align: right;">
-                <p id="card-rank" style="font-size: 24px; font-weight: 900; letter-spacing: -1px;"></p>
-                <p style="font-size: 8px; opacity: 0.6; text-transform: uppercase;">Kinetic Status</p>
+            <div style="text-align:right;">
+                <p id="card-rank" style="font-size:24px;font-weight:900;letter-spacing:-1px;"></p>
+                <p style="font-size:8px;opacity:0.6;text-transform:uppercase;">Kinetic Status</p>
             </div>
         </div>
         <div class="flex items-center gap-6">
-            <div id="card-avatar-container" style="width: 80px; height: 80px; border-radius: 50%; background: #0a192f; border: 2px solid #7afbb1; overflow: hidden;">
-                <img id="card-avatar" src="" style="width: 100%; height: 100%;">
+            <div id="card-avatar-container" style="width:80px;height:80px;border-radius:50%;background:#0a192f;border:2px solid #7afbb1;overflow:hidden;">
+                <img id="card-avatar" src="" style="width:100%;height:100%;">
             </div>
             <div>
-                <p id="card-name" style="font-size: 28px; font-weight: 900;"></p>
-                <p style="font-size: 12px; opacity: 0.8;">I-SHARK Institute Pilot</p>
+                <p id="card-name" style="font-size:28px;font-weight:900;"></p>
+                <p style="font-size:12px;opacity:0.8;">I-SHARK Institute Pilot</p>
             </div>
         </div>
         <div class="flex justify-between border-t border-white/10 pt-4">
-            <div><p style="font-size: 8px; opacity: 0.6;">VELOCITY</p><p id="card-wpm" style="font-size: 20px; font-weight: 800;"></p></div>
-            <div><p style="font-size: 8px; opacity: 0.6;">ACCURACY</p><p id="card-acc" style="font-size: 20px; font-weight: 800;"></p></div>
-            <div style="text-align: right;"><p style="font-size: 8px; opacity: 0.6;">SYSTEM</p><p style="font-size: 12px; font-weight: 800;">KINETIC V5.0</p></div>
+            <div><p style="font-size:8px;opacity:0.6;">VELOCITY</p><p id="card-wpm" style="font-size:20px;font-weight:800;"></p></div>
+            <div><p style="font-size:8px;opacity:0.6;">ACCURACY</p><p id="card-acc" style="font-size:20px;font-weight:800;"></p></div>
+            <div style="text-align:right;"><p style="font-size:8px;opacity:0.6;">SYSTEM</p><p style="font-size:12px;font-weight:800;">KINETIC V6.0</p></div>
         </div>
     </div>
 
-    <aside class="h-screen w-64 fixed left-0 top-0 z-40 bg-white dark:bg-slate-900 flex flex-col p-6 gap-4 font-headline border-r border-slate-100 dark:border-slate-800">
-        <div class="mb-10 flex items-center gap-3">
+    <!-- MOBILE MENU BUTTON -->
+    <button id="mobile-menu-btn" onclick="toggleSidebar()"
+        class="hidden fixed top-4 left-4 z-[60] bg-primary text-white w-10 h-10 rounded-xl items-center justify-center shadow-lg">
+        <span class="material-symbols-outlined text-xl">menu</span>
+    </button>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="h-screen w-64 fixed left-0 top-0 z-40 bg-white dark:bg-slate-900 flex flex-col p-6 gap-4 font-headline border-r border-slate-100 dark:border-slate-800">
+        <div class="mb-6 flex items-center gap-3">
             <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-sm border border-slate-50 dark:border-slate-800">
                 <img src="logo.png" alt="I-SHARK" class="w-full h-full object-contain">
             </div>
             <span class="text-xl font-black italic tracking-tighter text-primary dark:text-white">I-SHARK</span>
         </div>
-        
-        <div class="px-2 py-1 bg-accent/10 rounded-lg mb-4 text-center">
+
+        <!-- Streak -->
+        <div class="px-2 py-1 bg-accent/10 rounded-lg text-center">
             <p class="text-[9px] font-black uppercase text-accent tracking-widest">Pilot Streak</p>
             <p id="live-streak" class="text-xl font-black text-primary dark:text-white">0</p>
         </div>
 
+        <!-- Dark Mode -->
         <button onclick="toggleDarkMode()" class="flex items-center gap-3 p-3 w-full hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-all group">
             <span class="material-symbols-outlined dark:text-white">dark_mode</span>
             <span class="text-xs font-bold uppercase tracking-widest dark:text-white">Switch Mode</span>
         </button>
+
+        <!-- Sound toggle -->
+        <button id="sound-btn" onclick="toggleSound()" class="flex items-center gap-3 p-3 w-full hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-all group">
+            <span id="sound-icon" class="material-symbols-outlined dark:text-white">volume_up</span>
+            <span id="sound-label" class="text-xs font-bold uppercase tracking-widest dark:text-white">Sound On</span>
+        </button>
+
+        <!-- Theme Selector -->
+        <div class="sidebar-extras">
+            <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 px-1">Theme</p>
+            <div class="flex flex-col gap-1">
+                <button onclick="setTheme('default')" class="theme-opt flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-left hover:bg-slate-50 dark:hover:bg-slate-800 dark:text-white transition-all">
+                    <span class="w-3 h-3 rounded-full bg-[#00113a] inline-block"></span> Default
+                </button>
+                <button onclick="setTheme('matrix')" class="theme-opt flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-left hover:bg-slate-50 dark:hover:bg-slate-800 dark:text-white transition-all">
+                    <span class="w-3 h-3 rounded-full bg-[#00ff41] inline-block"></span> Matrix Terminal
+                </button>
+                <button onclick="setTheme('ocean')" class="theme-opt flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-left hover:bg-slate-50 dark:hover:bg-slate-800 dark:text-white transition-all">
+                    <span class="w-3 h-3 rounded-full bg-[#64ffda] inline-block"></span> Deep Ocean
+                </button>
+            </div>
+        </div>
+
+        <!-- Caret Customization -->
+        <div class="sidebar-extras">
+            <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 px-1">Caret Style</p>
+            <div class="flex gap-1">
+                <button onclick="setCaretStyle('line')"  class="caret-style-btn flex-1 py-1 rounded-lg text-[10px] font-black border border-slate-200 dark:border-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" data-style="line">Line</button>
+                <button onclick="setCaretStyle('block')" class="caret-style-btn flex-1 py-1 rounded-lg text-[10px] font-black border border-slate-200 dark:border-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" data-style="block">Block</button>
+                <button onclick="setCaretStyle('under')" class="caret-style-btn flex-1 py-1 rounded-lg text-[10px] font-black border border-slate-200 dark:border-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" data-style="under">Under</button>
+            </div>
+            <div class="flex gap-1 mt-1">
+                <button onclick="setCaretAnim('blink')"  class="caret-anim-btn flex-1 py-1 rounded-lg text-[10px] font-black border border-slate-200 dark:border-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" data-anim="blink">Blink</button>
+                <button onclick="setCaretAnim('solid')"  class="caret-anim-btn flex-1 py-1 rounded-lg text-[10px] font-black border border-slate-200 dark:border-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" data-anim="solid">Solid</button>
+                <button onclick="setCaretAnim('smooth')" class="caret-anim-btn flex-1 py-1 rounded-lg text-[10px] font-black border border-slate-200 dark:border-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" data-anim="smooth">Smooth</button>
+            </div>
+        </div>
 
         <div class="mt-auto flex flex-col gap-2">
             <div class="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
@@ -147,22 +269,25 @@
                 <span class="material-symbols-outlined">logout</span>
                 <span class="text-sm font-bold uppercase tracking-widest">Sign Out</span>
             </button>
-            <div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 opacity-60 text-[8px] font-black uppercase text-center text-secondary leading-loose">
+            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 opacity-60 text-[8px] font-black uppercase text-center text-secondary leading-loose">
                 Developed by Ali Raza Chadahar<br>Director @ I-SHARK Institute
             </div>
         </div>
     </aside>
 
-    <main class="ml-64 min-h-screen">
-        <header class="sticky top-0 z-30 glass-header h-20 flex justify-between items-center px-12 border-b border-slate-100 dark:border-slate-800">
+    <!-- MAIN -->
+    <main class="ml-64 min-h-screen transition-all">
+        <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur h-20 flex justify-between items-center px-8 md:px-12 border-b border-slate-100 dark:border-slate-800">
             <h1 class="font-headline font-bold text-xl text-primary dark:text-white uppercase tracking-widest">Pilot: <span id="pilot-name">...</span></h1>
             <div class="w-10 h-10 rounded-full bg-slate-200 ring-2 ring-primary/5 overflow-hidden">
                 <img id="pilot-avatar" src="" alt="Avatar"/>
             </div>
         </header>
 
-        <div class="p-12 max-w-5xl mx-auto space-y-8">
-            <div class="stats-grid grid grid-cols-4 gap-6">
+        <div class="p-6 md:p-12 max-w-5xl mx-auto space-y-6 md:space-y-8">
+
+            <!-- Stats -->
+            <div class="stats-grid grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center">
                     <span class="text-[10px] font-bold text-secondary uppercase mb-1">Timer</span>
                     <span id="time-log" class="text-4xl font-headline font-black tabular-nums">30</span>
@@ -181,10 +306,20 @@
                 </div>
             </div>
 
-            <div class="mode-row flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                <div class="flex gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl">
-                    <button class="mode-btn active px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all bg-primary text-white" data-mode="standard">Standard</button>
-                    <button id="revenge-btn" class="px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-red-400 border border-red-100 dark:border-red-900 hidden" onclick="toggleRevenge()">Revenge Mode</button>
+            <!-- Mode Row -->
+            <div class="mode-row flex flex-wrap gap-3 justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                <div class="flex flex-wrap gap-2">
+                    <!-- Standard / Revenge -->
+                    <div class="flex gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl">
+                        <button class="mode-btn active px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all bg-primary text-white" data-mode="standard">Standard</button>
+                        <button id="revenge-btn" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-red-400 border border-red-100 dark:border-red-900 hidden" onclick="toggleRevenge()">Revenge</button>
+                    </div>
+                    <!-- Advanced mode toggles -->
+                    <div class="flex gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl">
+                        <button id="toggle-numbers" onclick="toggleAdvMode('numbers')" class="adv-mode-btn px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700">Numbers</button>
+                        <button id="toggle-punct" onclick="toggleAdvMode('punctuation')" class="adv-mode-btn px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700">Punct.</button>
+                        <button id="toggle-code" onclick="toggleAdvMode('code')" class="adv-mode-btn px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700">Code</button>
+                    </div>
                 </div>
                 <div class="flex gap-2">
                     <button class="time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" data-time="15">15s</button>
@@ -193,394 +328,664 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-8">
-                <div class="col-span-2">
-                    <div id="typing-container-wrapper" class="bg-white dark:bg-slate-900/50 rounded-[2.5rem] p-12 border border-slate-100 dark:border-slate-800 shadow-2xl min-h-[300px] border-2">
+            <!-- Typing area + career log -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                <div class="md:col-span-2">
+                    <div id="typing-container-wrapper" class="bg-white dark:bg-slate-900/50 rounded-[2.5rem] px-10 py-8 border border-slate-100 dark:border-slate-800 shadow-2xl border-2">
                         <div id="ghost-caret"></div>
                         <div id="caret"></div>
-                        <div id="typing-container" class="font-mono italic"></div>
+                        <div id="typing-lines-viewport">
+                            <div id="typing-container" class="font-mono italic"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-span-1" id="personal-log-list">
+                <div class="md:col-span-1" id="personal-log-list">
                     <div class="bg-primary p-8 rounded-[2rem] text-white h-full shadow-xl border border-white/5">
-                        <h3 class="font-headline font-bold text-xs uppercase tracking-widest text-accent mb-8">Career Log</h3>
-                        <div id="personal-log-list-content" class="space-y-6"></div>
+                        <h3 class="font-headline font-bold text-xs uppercase tracking-widest text-accent mb-6">Career Log</h3>
+                        <div id="personal-log-list-content" class="space-y-5"></div>
                     </div>
                 </div>
             </div>
+
         </div>
     </main>
 
+    <!-- ============================================================
+         RESULTS MODAL
+    ============================================================= -->
     <div id="modal-overlay" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-md p-6">
-        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-12 text-center max-w-sm w-full shadow-2xl">
+        <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-10 text-center max-w-lg w-full shadow-2xl overflow-y-auto max-h-[95vh]">
             <p id="rank-title" class="text-accent text-[10px] font-black uppercase tracking-[0.3em] mb-2">New Rank Unlocked</p>
-            <h2 id="final-rank" class="font-headline font-black text-4xl mb-8 dark:text-white uppercase tracking-tighter">PILOT</h2>
-            
-            <div class="grid grid-cols-2 gap-4 mb-6">
+            <h2 id="final-rank" class="font-headline font-black text-4xl mb-1 dark:text-white uppercase tracking-tighter flex items-center justify-center gap-3">
+                PILOT <span id="rank-badge" class="text-3xl"></span>
+            </h2>
+
+            <div class="grid grid-cols-2 gap-4 mb-6 mt-6">
                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
                     <p class="text-[10px] font-bold uppercase mb-1 opacity-50">WPM</p>
-                    <p id="final-wpm" class="text-3xl font-black">0</p>
+                    <p id="final-wpm" class="text-3xl font-black dark:text-white">0</p>
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
                     <p class="text-[10px] font-bold uppercase mb-1 opacity-50">Accuracy</p>
-                    <p id="final-accuracy" class="text-3xl font-black">0%</p>
+                    <p id="final-accuracy" class="text-3xl font-black dark:text-white">0%</p>
                 </div>
             </div>
 
-            <button onclick="generatePilotID()" id="share-btn" class="w-full border-2 border-primary dark:border-white mb-3 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+            <!-- WPM Chart -->
+            <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 mb-6">
+                <p class="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-3 text-left dark:text-white">WPM Timeline</p>
+                <canvas id="wpm-chart" height="110"></canvas>
+            </div>
+
+            <!-- Key Heatmap -->
+            <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 mb-6" id="heatmap-section">
+                <p class="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-3 text-left dark:text-white">Miss Heatmap</p>
+                <div id="key-heatmap" class="flex flex-col gap-1 items-center"></div>
+            </div>
+
+            <button onclick="generatePilotID()" id="share-btn" class="w-full border-2 border-primary dark:border-white mb-3 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 dark:text-white transition-all">
                 <span class="material-symbols-outlined text-sm">share</span> Share with Friends
             </button>
-            
             <button onclick="resetTest()" class="w-full bg-primary dark:bg-white dark:text-primary py-5 rounded-2xl font-black uppercase text-xs tracking-widest text-white shadow-lg">Relaunch Mission (Tab)</button>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        const _supabase = supabase.createClient(
-            'https://eycpvpxymkxvidtnepnu.supabase.co', 
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5Y3B2cHh5bWt4dmlkdG5lcG51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxODY2MDMsImV4cCI6MjA5Mjc2MjYwM30.V5PPXAyxXok-j8K4sRQqXWxWLv_F-oIObpgAxVCkbGI'
-        );
+    // ============================================================
+    //  SUPABASE
+    // ============================================================
+    const _supabase = supabase.createClient(
+        'https://eycpvpxymkxvidtnepnu.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5Y3B2cHh5bWt4dmlkdG5lcG51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxODY2MDMsImV4cCI6MjA5Mjc2MjYwM30.V5PPXAyxXok-j8K4sRQqXWxWLv_F-oIObpgAxVCkbGI'
+    );
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playCorrectClick() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.05);
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+    // ============================================================
+    //  AUDIO
+    // ============================================================
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let soundEnabled = localStorage.getItem('ishark_sound') !== 'off';
+
+    function updateSoundUI() {
+        document.getElementById('sound-icon').innerText = soundEnabled ? 'volume_up' : 'volume_off';
+        document.getElementById('sound-label').innerText = soundEnabled ? 'Sound On' : 'Sound Off';
+    }
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('ishark_sound', soundEnabled ? 'on' : 'off');
+        updateSoundUI();
+    }
+
+    function playCorrectClick() {
+        if (!soundEnabled) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+    }
+    function playErrorThud() {
+        if (!soundEnabled) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+    }
+
+    // ============================================================
+    //  PARTICLES
+    // ============================================================
+    function spawnParticles(x, y, isFlow = false) {
+        const wrapper = document.getElementById('typing-container-wrapper');
+        const color = isFlow ? '#7afbb1' : (document.documentElement.classList.contains('dark') ? '#f8fafc' : '#00113a');
+        const count = isFlow ? 12 : 6;
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.backgroundColor = color;
+            p.style.left = x + 'px'; p.style.top = y + 'px';
+            p.style.setProperty('--dx', `${(Math.random()-0.5)*(isFlow?120:80)}px`);
+            p.style.setProperty('--dy', `${(Math.random()-0.5)*(isFlow?120:80)}px`);
+            wrapper.appendChild(p);
+            setTimeout(() => p.remove(), 500);
         }
+    }
 
-        function playErrorThud() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(80, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-        }
+    // ============================================================
+    //  CARET CUSTOMISATION
+    // ============================================================
+    let caretStyle = localStorage.getItem('ishark_caret_style') || 'line';
+    let caretAnim  = localStorage.getItem('ishark_caret_anim')  || 'blink';
 
-        function spawnParticles(x, y, isFlow = false) {
-            const wrapper = document.getElementById('typing-container-wrapper');
-            const color = isFlow ? '#7afbb1' : (document.documentElement.classList.contains('dark') ? '#f8fafc' : '#00113a');
-            const count = isFlow ? 12 : 6;
-            for (let i = 0; i < count; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.backgroundColor = color;
-                p.style.left = x + 'px';
-                p.style.top = y + 'px';
-                const dx = (Math.random() - 0.5) * (isFlow ? 120 : 80);
-                const dy = (Math.random() - 0.5) * (isFlow ? 120 : 80);
-                p.style.setProperty('--dx', `${dx}px`);
-                p.style.setProperty('--dy', `${dy}px`);
-                wrapper.appendChild(p);
-                setTimeout(() => p.remove(), 500);
-            }
-        }
+    function applyCaretClasses() {
+        const b = document.body;
+        ['caret-line','caret-block','caret-under'].forEach(c => b.classList.remove(c));
+        ['caret-blink','caret-solid','caret-smooth'].forEach(c => b.classList.remove(c));
+        b.classList.add('caret-' + caretStyle);
+        b.classList.add('caret-' + caretAnim);
+        // highlight active btns
+        document.querySelectorAll('.caret-style-btn').forEach(btn => {
+            btn.classList.toggle('bg-primary', btn.dataset.style === caretStyle);
+            btn.classList.toggle('text-white', btn.dataset.style === caretStyle);
+        });
+        document.querySelectorAll('.caret-anim-btn').forEach(btn => {
+            btn.classList.toggle('bg-primary', btn.dataset.anim === caretAnim);
+            btn.classList.toggle('text-white', btn.dataset.anim === caretAnim);
+        });
+    }
+    function setCaretStyle(s) { caretStyle = s; localStorage.setItem('ishark_caret_style', s); applyCaretClasses(); }
+    function setCaretAnim(a)  { caretAnim  = a; localStorage.setItem('ishark_caret_anim', a);  applyCaretClasses(); }
+    applyCaretClasses();
 
-        // --- PILOT ID GENERATOR LOGIC ---
-        function generatePilotID() {
-            const template = document.getElementById('pilot-id-template');
-            const btn = document.getElementById('share-btn');
-            btn.innerText = "Syncing Biometrics...";
+    // ============================================================
+    //  THEME
+    // ============================================================
+    function setTheme(t) {
+        document.body.classList.remove('theme-matrix','theme-ocean');
+        if (t !== 'default') document.body.classList.add('theme-' + t);
+        localStorage.setItem('ishark_theme_color', t);
+        setTimeout(updateCaret, 100);
+    }
+    const savedTheme = localStorage.getItem('ishark_theme_color') || 'default';
+    setTheme(savedTheme);
 
-            // Populate the card data
-            document.getElementById('card-name').innerText = currentUser.email.split('@')[0].toUpperCase();
-            document.getElementById('card-rank').innerText = document.getElementById('final-rank').innerText;
-            document.getElementById('card-wpm').innerText = document.getElementById('final-wpm').innerText + " WPM";
-            document.getElementById('card-acc').innerText = document.getElementById('final-accuracy').innerText;
-            document.getElementById('card-avatar').src = document.getElementById('pilot-avatar').src;
+    // ============================================================
+    //  MOBILE SIDEBAR
+    // ============================================================
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
 
-            // Render to image
-            html2canvas(template, {
-                useCORS: true,
-                scale: 2, // High resolution
-                backgroundColor: "#00113a"
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `ISHARK_ID_${currentUser.email.split('@')[0]}.png`;
-                link.href = canvas.toDataURL("image/png");
-                link.click();
-                btn.innerText = "ID Downloaded!";
-                setTimeout(() => btn.innerText = "Generate Pilot ID", 3000);
+    // ============================================================
+    //  PILOT ID
+    // ============================================================
+    async function generatePilotID() {
+        const template = document.getElementById('pilot-id-template');
+        const btn = document.getElementById('share-btn');
+        btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">refresh</span> Syncing Biometrics...';
+
+        document.getElementById('card-name').innerText = currentUser.email.split('@')[0].toUpperCase();
+        document.getElementById('card-rank').innerText = document.getElementById('final-rank').innerText.replace(/[^\w\s]/gi,'').trim();
+        document.getElementById('card-wpm').innerText = document.getElementById('final-wpm').innerText + " WPM";
+        document.getElementById('card-acc').innerText = document.getElementById('final-accuracy').innerText;
+        document.getElementById('card-avatar').src = document.getElementById('pilot-avatar').src;
+
+        await document.fonts.ready; // ensure fonts loaded
+        html2canvas(template, { useCORS: true, scale: 2, backgroundColor: "#00113a" }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `ISHARK_ID_${currentUser.email.split('@')[0]}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            btn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> ID Downloaded!';
+            setTimeout(() => btn.innerHTML = '<span class="material-symbols-outlined text-sm">share</span> Share with Friends', 3000);
+        });
+    }
+
+    // ============================================================
+    //  GAME STATE
+    // ============================================================
+    let currentUser = null;
+    let bestWPM = parseInt(localStorage.getItem('ishark_best_wpm')) || 0;
+    let errorMap = {}, isRevengeMode = false;
+    let wordList = [], currentWordIdx = 0, currentLetterIdx = 0;
+    let isTestFinished = false, timerInterval = null, timeRemaining = 30, TIME_LIMIT = 30;
+    let keystrokes = 0, errors = 0, startTime = null, CURRENT_MODE = "standard", streak = 0;
+    let wpmHistory = [], errorHistory = [], wpmChartInstance = null;
+    let ghostInterval = null, ghostWordIdx = 0, ghostLetterIdx = 0;
+    let advModes = { numbers: false, punctuation: false, code: false };
+
+    // ============================================================
+    //  AUTH
+    // ============================================================
+    async function checkAuth() {
+        const { data: { user } } = await _supabase.auth.getUser();
+        if (!user) { window.location.href = 'login.html'; return; }
+        currentUser = user;
+        document.getElementById('pilot-name').innerText = user.email.split('@')[0].toUpperCase();
+        document.getElementById('pilot-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
+        document.getElementById('sidebar-best-wpm').innerText = bestWPM;
+        if (user.email === 'hacker.chadhar@gmail.com') document.getElementById('admin-gate').classList.remove('hidden');
+        fetchPersonalLog();
+    }
+    checkAuth();
+
+    async function fetchPersonalLog() {
+        const logContainer = document.getElementById('personal-log-list-content');
+        try {
+            const { data, error } = await _supabase.from('typing_results')
+                .select('wpm, accuracy, created_at').eq('student_id', currentUser.email)
+                .order('created_at', { ascending: false }).limit(5);
+            if (error) throw error;
+            logContainer.innerHTML = data.length ? '' : '<p class="text-[10px] opacity-40 uppercase italic">No history.</p>';
+            data.forEach(entry => {
+                const time = new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                logContainer.innerHTML += `<div class="flex justify-between items-center border-b border-white/5 pb-4 last:border-0">
+                    <div><p class="text-[9px] opacity-40 mb-1">${time}</p>
+                    <p class="text-xl font-headline font-black">${entry.wpm} <span class="text-[10px] opacity-40 uppercase">WPM</span></p></div>
+                    <p class="text-[10px] font-bold text-accent">${entry.accuracy}%</p></div>`;
             });
+        } catch (err) {}
+    }
+
+    // ============================================================
+    //  WORD DICTIONARIES
+    // ============================================================
+    const dict = ["the","be","to","of","and","a","in","that","have","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us"];
+    const numberWords = ["12","47","83","256","1024","99","35","18","72","400","66","1000","2048","512","9","31","88","150"];
+    const punctWords  = ["hello,","world.","yes!","no?","great—","wait...","maybe.","done!","next,","last."];
+    const codeWords   = ["function","const","let","var","if","else","return","=>","{}","[]","()","className","useState","useEffect","async","await","typeof","null","undefined","true","false","console.log","myFunction","camelCase","thisValue","forEach","map","filter","reduce"];
+
+    function buildWordPool() {
+        let pool = [...dict];
+        if (advModes.numbers)     pool = [...pool, ...numberWords];
+        if (advModes.punctuation) pool = [...pool, ...punctWords];
+        if (advModes.code)        pool = [...pool, ...codeWords];
+        return pool;
+    }
+
+    // ============================================================
+    //  ADVANCED MODE TOGGLES
+    // ============================================================
+    function toggleAdvMode(mode) {
+        advModes[mode] = !advModes[mode];
+        const btn = document.getElementById('toggle-' + (mode === 'punctuation' ? 'punct' : mode));
+        if (advModes[mode]) {
+            btn.classList.add('bg-primary','text-white','dark:bg-accent','dark:text-primary');
+        } else {
+            btn.classList.remove('bg-primary','text-white','dark:bg-accent','dark:text-primary');
         }
+        resetTest();
+    }
 
-        let currentUser = null, bestWPM = parseInt(localStorage.getItem('ishark_best_wpm')) || 0, errorMap = {}, isRevengeMode = false;
-        let wordList = [], currentWordIdx = 0, currentLetterIdx = 0, isTestFinished = false, timerInterval = null, timeRemaining = 30, TIME_LIMIT = 30;
-        let keystrokes = 0, errors = 0, startTime = null, CURRENT_MODE = "standard", streak = 0, wpmHistory = [];
-        let ghostInterval = null, ghostWordIdx = 0, ghostLetterIdx = 0;
-
-        async function checkAuth() {
-            const { data: { user } } = await _supabase.auth.getUser();
-            if (!user) window.location.href = 'login.html';
-            else {
-                currentUser = user;
-                document.getElementById('pilot-name').innerText = user.email.split('@')[0].toUpperCase();
-                document.getElementById('pilot-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
-                document.getElementById('sidebar-best-wpm').innerText = bestWPM;
-                if (user.email === 'hacker.chadhar@gmail.com') document.getElementById('admin-gate').classList.remove('hidden');
-                fetchPersonalLog();
-            }
+    // ============================================================
+    //  LOAD LESSON
+    // ============================================================
+    function loadLesson() {
+        const container = document.getElementById('typing-container');
+        container.innerHTML = '';
+        wordList = [];
+        let pool = buildWordPool();
+        if (isRevengeMode && Object.keys(errorMap).length > 0) {
+            const filtered = pool.filter(word => Object.keys(errorMap).some(key => word.includes(key)));
+            if (filtered.length > 0) pool = filtered;
         }
-        checkAuth();
-
-        async function fetchPersonalLog() {
-            const logContainer = document.getElementById('personal-log-list-content');
-            try {
-                const { data, error } = await _supabase.from('typing_results').select('wpm, accuracy, created_at').eq('student_id', currentUser.email).order('created_at', { ascending: false }).limit(5);
-                if (error) throw error;
-                logContainer.innerHTML = data.length ? '' : '<p class="text-[10px] opacity-40 uppercase italic">No history.</p>';
-                let sumAcc = 0;
-                data.forEach(entry => {
-                    sumAcc += entry.accuracy;
-                    const time = new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    logContainer.innerHTML += `<div class="flex justify-between items-center border-b border-white/5 pb-4 last:border-0"><div><p class="text-[9px] opacity-40 mb-1">${time}</p><p class="text-xl font-headline font-black">${entry.wpm} <span class="text-[10px] opacity-40 uppercase">WPM</span></p></div><p class="text-[10px] font-bold text-accent">${entry.accuracy}%</p></div>`;
-                });
-                if(data.length) document.getElementById('session-avg-acc').innerText = Math.round(sumAcc / data.length) + "%";
-            } catch (err) {}
-        }
-
-        const dict = ["the", "be", "to", "of", "and", "a", "in", "that", "have", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us"];
-
-        function loadLesson() {
-            const container = document.getElementById('typing-container');
-            container.innerHTML = '';
-            wordList = [];
-            let activeDict = dict;
-            if (isRevengeMode && Object.keys(errorMap).length > 0) {
-                activeDict = dict.filter(word => Object.keys(errorMap).some(key => word.includes(key)));
-                if(activeDict.length === 0) activeDict = dict;
-            }
-            for (let i = 0; i < 80; i++) wordList.push(activeDict[Math.floor(Math.random() * activeDict.length)]);
-            wordList.forEach((word, wIdx) => {
-                const wordDiv = document.createElement('div');
-                wordDiv.className = 'word';
-                word.split('').forEach((char, lIdx) => {
-                    const span = document.createElement('span');
-                    span.className = 'letter pending';
-                    span.innerText = char;
-                    span.id = `w${wIdx}l${lIdx}`;
-                    wordDiv.appendChild(span);
-                });
-                container.appendChild(wordDiv);
+        for (let i = 0; i < 100; i++) wordList.push(pool[Math.floor(Math.random() * pool.length)]);
+        wordList.forEach((word, wIdx) => {
+            const wordDiv = document.createElement('div');
+            wordDiv.className = 'word';
+            word.split('').forEach((char, lIdx) => {
+                const span = document.createElement('span');
+                span.className = 'letter pending';
+                span.innerText = char;
+                span.id = `w${wIdx}l${lIdx}`;
+                wordDiv.appendChild(span);
             });
-            currentWordIdx = 0; currentLetterIdx = 0;
-            ghostWordIdx = 0; ghostLetterIdx = 0;
-            setTimeout(updateCaret, 100);
-        }
+            container.appendChild(wordDiv);
+        });
+        currentWordIdx = 0; currentLetterIdx = 0;
+        ghostWordIdx = 0; ghostLetterIdx = 0;
+        document.getElementById('typing-lines-viewport').style.transform = 'translateY(0)';
+        setTimeout(updateCaret, 100);
+    }
 
-        function updateCaret() {
-            const caret = document.getElementById('caret');
-            const activeLetter = document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`);
-            const wrapper = document.getElementById('typing-container-wrapper');
-            if (activeLetter) {
-                const letterRect = activeLetter.getBoundingClientRect();
-                const wrapperRect = wrapper.getBoundingClientRect();
-                const x = letterRect.left - wrapperRect.left;
-                const y = letterRect.top - wrapperRect.top;
-                caret.style.display = 'block';
-                caret.style.transform = `translate(${x}px, ${y}px)`;
-                return {x, y};
-            }
-            return null;
+    // ============================================================
+    //  SMOOTH LINE SCROLL
+    // ============================================================
+    function scrollToActiveLine() {
+        const activeLetter = document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`);
+        const viewport = document.getElementById('typing-lines-viewport');
+        const wrapper = document.getElementById('typing-container-wrapper');
+        if (!activeLetter || !viewport) return;
+        const wrapperRect = wrapper.getBoundingClientRect();
+        const letterRect = activeLetter.getBoundingClientRect();
+        const letterTopRelative = letterRect.top - viewport.getBoundingClientRect().top;
+        const targetScroll = letterTopRelative - (wrapperRect.height / 2) + (letterRect.height / 2);
+        if (targetScroll > 20) {
+            viewport.style.transform = `translateY(-${targetScroll}px)`;
         }
+    }
 
-        function updateGhostCaret() {
-            const gCaret = document.getElementById('ghost-caret');
-            const activeLetter = document.getElementById(`w${ghostWordIdx}l${ghostLetterIdx}`);
-            const wrapper = document.getElementById('typing-container-wrapper');
-            if (activeLetter) {
-                const letterRect = activeLetter.getBoundingClientRect();
-                const wrapperRect = wrapper.getBoundingClientRect();
-                gCaret.style.display = 'block';
-                gCaret.style.transform = `translate(${letterRect.left - wrapperRect.left}px, ${letterRect.top - wrapperRect.top}px)`;
-            }
+    // ============================================================
+    //  CARET POSITION
+    // ============================================================
+    function updateCaret() {
+        const caret = document.getElementById('caret');
+        const activeLetter = document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`);
+        const wrapper = document.getElementById('typing-container-wrapper');
+        if (activeLetter && wrapper) {
+            const letterRect = activeLetter.getBoundingClientRect();
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const x = letterRect.left - wrapperRect.left;
+            const y = letterRect.top - wrapperRect.top;
+            caret.style.display = 'block';
+            caret.style.transform = `translate(${x}px, ${y}px)`;
+            return { x, y };
         }
+        return null;
+    }
 
-        function startGhost() {
-            if (bestWPM < 15) return;
-            const msPerChar = 60000 / (bestWPM * 5); 
-            ghostInterval = setInterval(() => {
-                if (isTestFinished) return;
-                ghostLetterIdx++;
-                if (ghostLetterIdx >= wordList[ghostWordIdx].length) {
-                    ghostWordIdx++;
-                    ghostLetterIdx = 0;
-                }
-                if (ghostWordIdx >= wordList.length) clearInterval(ghostInterval);
-                updateGhostCaret();
-            }, msPerChar);
+    function updateGhostCaret() {
+        const gCaret = document.getElementById('ghost-caret');
+        const activeLetter = document.getElementById(`w${ghostWordIdx}l${ghostLetterIdx}`);
+        const wrapper = document.getElementById('typing-container-wrapper');
+        if (activeLetter && wrapper) {
+            const letterRect = activeLetter.getBoundingClientRect();
+            const wrapperRect = wrapper.getBoundingClientRect();
+            gCaret.style.display = 'block';
+            gCaret.style.transform = `translate(${letterRect.left - wrapperRect.left}px, ${letterRect.top - wrapperRect.top}px)`;
         }
+    }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') { e.preventDefault(); resetTest(); return; }
+    function startGhost() {
+        if (bestWPM < 15) return;
+        const msPerChar = 60000 / (bestWPM * 5);
+        ghostInterval = setInterval(() => {
             if (isTestFinished) return;
-            if (!startTime && e.key.length === 1) {
-                startTime = new Date();
-                document.body.classList.add('is-typing');
-                startGhost();
-                timerInterval = setInterval(() => {
-                    timeRemaining--;
-                    document.getElementById('time-log').innerText = timeRemaining;
-                    if (timeRemaining <= 0) endTest();
-                }, 1000);
+            ghostLetterIdx++;
+            if (ghostLetterIdx >= wordList[ghostWordIdx].length) { ghostWordIdx++; ghostLetterIdx = 0; }
+            if (ghostWordIdx >= wordList.length) { clearInterval(ghostInterval); return; }
+            updateGhostCaret();
+        }, msPerChar);
+    }
+
+    // ============================================================
+    //  KEYBOARD INPUT
+    // ============================================================
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') { e.preventDefault(); resetTest(); return; }
+        if (isTestFinished) return;
+        // Close mobile sidebar on typing
+        document.getElementById('sidebar').classList.remove('open');
+
+        if (!startTime && e.key.length === 1) {
+            startTime = new Date();
+            document.body.classList.add('is-typing');
+            startGhost();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                document.getElementById('time-log').innerText = timeRemaining;
+                const wpm = parseInt(document.getElementById('wpm-log').innerText) || 0;
+                const errRate = errors > 0 ? Math.round((errors / (keystrokes || 1)) * 100) : 0;
+                wpmHistory.push({ t: TIME_LIMIT - timeRemaining, wpm });
+                errorHistory.push({ t: TIME_LIMIT - timeRemaining, err: errRate });
+                if (timeRemaining <= 0) endTest();
+            }, 1000);
+        }
+
+        const activeWord = wordList[currentWordIdx];
+        const activeSpan = document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`);
+
+        if (e.key === 'Backspace') {
+            if (currentLetterIdx > 0) {
+                currentLetterIdx--;
+                document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`).className = 'letter pending';
+                streak = 0;
+                document.getElementById('live-streak').innerText = streak;
+                document.body.classList.remove('flow-state');
+                updateCaret();
             }
-            const activeWord = wordList[currentWordIdx];
-            const activeSpan = document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`);
-            
-            if (e.key === 'Backspace') {
-                if (currentLetterIdx > 0) {
-                    currentLetterIdx--;
-                    document.getElementById(`w${currentWordIdx}l${currentLetterIdx}`).className = 'letter pending';
-                    streak = 0;
-                    document.getElementById('live-streak').innerText = streak;
-                    document.body.classList.remove('flow-state');
-                    updateCaret();
-                }
-                return;
+            return;
+        }
+        if (e.key === ' ') {
+            e.preventDefault();
+            if (currentWordIdx < wordList.length - 1) {
+                currentWordIdx++; currentLetterIdx = 0;
+                scrollToActiveLine();
+                updateCaret();
+                playCorrectClick();
             }
-            if (e.key === ' ') {
-                e.preventDefault();
-                if (currentWordIdx < wordList.length - 1) {
-                    currentWordIdx++;
-                    currentLetterIdx = 0;
-                    updateCaret();
+            return;
+        }
+        if (e.key.length === 1) {
+            keystrokes++;
+            if (activeSpan) {
+                const pos = updateCaret();
+                if (e.key === activeWord[currentLetterIdx]) {
+                    activeSpan.className = 'letter correct';
                     playCorrectClick();
+                    streak++;
+                    if (streak >= 20) document.body.classList.add('flow-state');
+                    if (pos) spawnParticles(pos.x, pos.y, streak >= 20);
+                } else {
+                    activeSpan.className = 'letter incorrect';
+                    errors++;
+                    streak = 0;
+                    document.body.classList.remove('flow-state');
+                    playErrorThud();
+                    const missedKey = activeWord[currentLetterIdx];
+                    errorMap[missedKey] = (errorMap[missedKey] || 0) + 1;
+                    document.getElementById('revenge-btn').classList.remove('hidden');
                 }
-                return;
+                document.getElementById('live-streak').innerText = streak;
+                currentLetterIdx++;
+                scrollToActiveLine();
+                updateCaret();
+                calculateStats();
             }
-            if (e.key.length === 1) {
-                keystrokes++;
-                if (activeSpan) {
-                    const pos = updateCaret();
-                    if (e.key === activeWord[currentLetterIdx]) {
-                        activeSpan.className = 'letter correct';
-                        playCorrectClick();
-                        streak++;
-                        if (streak >= 20) document.body.classList.add('flow-state');
-                        if (pos) spawnParticles(pos.x, pos.y, streak >= 20);
-                    } else {
-                        activeSpan.className = 'letter incorrect';
-                        errors++;
-                        streak = 0;
-                        document.body.classList.remove('flow-state');
-                        playErrorThud();
-                        errorMap[activeWord[currentLetterIdx]] = (errorMap[activeWord[currentLetterIdx]] || 0) + 1;
-                        document.getElementById('revenge-btn').classList.remove('hidden');
+        }
+    });
+
+    // ============================================================
+    //  STATS
+    // ============================================================
+    function calculateStats() {
+        const mins = (new Date() - startTime) / 60000;
+        const wpm = Math.round(((keystrokes - errors) / 5) / mins) || 0;
+        const acc = Math.round(((keystrokes - errors) / keystrokes) * 100) || 100;
+        const avgWpm = (wpmHistory.reduce((a, b) => a + b.wpm, 0) / (wpmHistory.length || 1));
+        const diffs = wpmHistory.map(v => Math.abs(v.wpm - avgWpm));
+        const consistency = Math.max(0, 100 - (diffs.reduce((a, b) => a + b, 0) / (diffs.length || 1)) * 2);
+        document.getElementById('wpm-log').innerText = wpm;
+        document.getElementById('accuracy-log').innerText = acc + "%";
+        document.getElementById('consistency-log').innerText = Math.round(consistency) + "%";
+    }
+
+    // ============================================================
+    //  RANK + BADGE
+    // ============================================================
+    function getRank(wpm, acc) {
+        if (acc < 70) return { rank: "RECRUIT",  badge: "💀" };
+        if (wpm < 25) return { rank: "PILOT",    badge: "✈️" };
+        if (wpm < 45) return { rank: "ACE",      badge: "⚡" };
+        if (wpm < 70) return { rank: "PHANTOM",  badge: "👻" };
+        return              { rank: "SPECTRE",   badge: "🦈" };
+    }
+
+    // ============================================================
+    //  HEATMAP
+    // ============================================================
+    function renderHeatmap(errorMap) {
+        const rows = [
+            ['q','w','e','r','t','y','u','i','o','p'],
+            ['a','s','d','f','g','h','j','k','l'],
+            ['z','x','c','v','b','n','m']
+        ];
+        const maxErr = Math.max(1, ...Object.values(errorMap));
+        const heatmapEl = document.getElementById('key-heatmap');
+        heatmapEl.innerHTML = '';
+        rows.forEach(row => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'flex gap-1 justify-center';
+            row.forEach(key => {
+                const count = errorMap[key] || 0;
+                const intensity = count / maxErr;
+                const r = Math.round(147 * intensity + 30 * (1 - intensity));
+                const g = Math.round(10  * intensity + 64 * (1 - intensity));
+                const b = Math.round(10  * intensity + 100*(1 - intensity));
+                const bgColor = count === 0 ? (document.documentElement.classList.contains('dark') ? '#1e293b' : '#f1f5f9') : `rgb(${r},${g},${b})`;
+                const textColor = intensity > 0.4 ? 'white' : (document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b');
+                const keyEl = document.createElement('div');
+                keyEl.className = 'hk';
+                keyEl.style.cssText = `width:28px;height:28px;background:${bgColor};color:${textColor};font-size:9px;font-weight:800;border-radius:5px;display:flex;align-items:center;justify-content:center;position:relative;`;
+                keyEl.innerText = key.toUpperCase();
+                if (count > 0) {
+                    const badge = document.createElement('div');
+                    badge.style.cssText = 'position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;border-radius:50%;width:14px;height:14px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:900;';
+                    badge.innerText = count;
+                    keyEl.appendChild(badge);
+                }
+                rowDiv.appendChild(keyEl);
+            });
+            heatmapEl.appendChild(rowDiv);
+        });
+    }
+
+    // ============================================================
+    //  CHART
+    // ============================================================
+    function renderChart() {
+        const ctx = document.getElementById('wpm-chart').getContext('2d');
+        if (wpmChartInstance) wpmChartInstance.destroy();
+        const labels = wpmHistory.map(d => d.t + 's');
+        const wpmData = wpmHistory.map(d => d.wpm);
+        const errData = errorHistory.map(d => d.err);
+        const isDark = document.documentElement.classList.contains('dark');
+        const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+        const textColor = isDark ? '#94a3b8' : '#64748b';
+        wpmChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'WPM',
+                        data: wpmData,
+                        borderColor: '#00113a',
+                        backgroundColor: 'rgba(0,17,58,0.08)',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Error %',
+                        data: errData,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239,68,68,0.06)',
+                        borderWidth: 1.5,
+                        pointRadius: 2,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y1'
                     }
-                    document.getElementById('live-streak').innerText = streak;
-                    currentLetterIdx++;
-                    updateCaret();
-                    calculateStats();
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { labels: { color: textColor, font: { size: 10, weight: '700', family: 'Space Grotesk' }, boxWidth: 10 } } },
+                scales: {
+                    x: { ticks: { color: textColor, font: { size: 9 } }, grid: { color: gridColor } },
+                    y: { type: 'linear', position: 'left', ticks: { color: textColor, font: { size: 9 } }, grid: { color: gridColor } },
+                    y1: { type: 'linear', position: 'right', ticks: { color: '#ef4444', font: { size: 9 } }, grid: { drawOnChartArea: false } }
                 }
             }
         });
+    }
 
-        function calculateStats() {
-            const mins = (new Date() - startTime) / 60000;
-            const wpm = Math.round(((keystrokes - errors) / 5) / mins) || 0;
-            const acc = Math.round(((keystrokes - errors) / keystrokes) * 100) || 100;
-            wpmHistory.push(wpm);
-            const avgWpm = wpmHistory.reduce((a, b) => a + b, 0) / wpmHistory.length;
-            const diffs = wpmHistory.map(v => Math.abs(v - avgWpm));
-            const consistency = Math.max(0, 100 - (diffs.reduce((a, b) => a + b, 0) / wpmHistory.length) * 2);
+    // ============================================================
+    //  END TEST
+    // ============================================================
+    async function endTest() {
+        isTestFinished = true;
+        clearInterval(timerInterval); clearInterval(ghostInterval);
+        document.body.classList.remove('is-typing','flow-state');
 
-            document.getElementById('wpm-log').innerText = wpm;
-            document.getElementById('accuracy-log').innerText = acc + "%";
-            document.getElementById('consistency-log').innerText = Math.round(consistency) + "%";
+        const wpm = parseInt(document.getElementById('wpm-log').innerText);
+        const acc = parseInt(document.getElementById('accuracy-log').innerText);
+        const { rank, badge } = getRank(wpm, acc);
+
+        document.getElementById('final-rank').innerHTML = `${rank} <span id="rank-badge">${badge}</span>`;
+        document.getElementById('final-wpm').innerText = wpm;
+        document.getElementById('final-accuracy').innerText = acc + "%";
+        document.getElementById('modal-overlay').style.display = 'flex';
+
+        renderChart();
+        renderHeatmap(errorMap);
+
+        if (wpm > bestWPM) {
+            bestWPM = wpm;
+            localStorage.setItem('ishark_best_wpm', bestWPM);
+            document.getElementById('sidebar-best-wpm').innerText = bestWPM;
         }
 
-        function getRank(wpm, acc) {
-            if (acc < 70) return "RECRUIT";
-            if (wpm < 25) return "PILOT";
-            if (wpm < 45) return "ACE";
-            if (wpm < 70) return "PHANTOM";
-            return "SPECTRE";
-        }
+        // Build mode string
+        let modeStr = 'standard';
+        const activeModes = Object.entries(advModes).filter(([,v]) => v).map(([k]) => k);
+        if (activeModes.length) modeStr = activeModes.join('+');
+        if (isRevengeMode) modeStr += '+revenge';
 
-        async function endTest() {
-            isTestFinished = true;
-            clearInterval(timerInterval);
-            clearInterval(ghostInterval);
-            document.body.classList.remove('is-typing');
-            document.body.classList.remove('flow-state');
-            
-            const wpm = parseInt(document.getElementById('wpm-log').innerText);
-            const acc = parseInt(document.getElementById('accuracy-log').innerText);
-            const rank = getRank(wpm, acc);
+        try {
+            await _supabase.from('typing_results').insert([{
+                student_id: currentUser.email, wpm, accuracy: acc, missed_keys: errorMap, mode: modeStr
+            }]);
+            fetchPersonalLog();
+        } catch (err) {}
+    }
 
-            document.getElementById('final-rank').innerText = rank;
-            document.getElementById('final-wpm').innerText = wpm;
-            document.getElementById('final-accuracy').innerText = acc + "%";
-            document.getElementById('modal-overlay').style.display = 'flex';
-
-            if (wpm > bestWPM) {
-                bestWPM = wpm;
-                localStorage.setItem('ishark_best_wpm', bestWPM);
-                document.getElementById('sidebar-best-wpm').innerText = bestWPM;
-            }
-
-            try {
-                await _supabase.from('typing_results').insert([{ 
-                    student_id: currentUser.email, wpm: wpm, accuracy: acc, missed_keys: errorMap 
-                }]);
-                fetchPersonalLog();
-            } catch (err) {}
-        }
-
-        function resetTest() {
-            clearInterval(timerInterval);
-            clearInterval(ghostInterval);
-            keystrokes = 0; errors = 0; streak = 0; currentWordIdx = 0; currentLetterIdx = 0;
-            ghostWordIdx = 0; ghostLetterIdx = 0; wpmHistory = [];
-            startTime = null; isTestFinished = false; timeRemaining = TIME_LIMIT;
-            document.getElementById('time-log').innerText = TIME_LIMIT;
-            document.getElementById('wpm-log').innerText = "0";
-            document.getElementById('accuracy-log').innerText = "100%";
-            document.getElementById('consistency-log').innerText = "0%";
-            document.getElementById('live-streak').innerText = "0";
-            document.body.classList.remove('is-typing');
-            document.body.classList.remove('flow-state');
-            document.getElementById('modal-overlay').style.display = 'none';
-            if (!isRevengeMode) errorMap = {};
-            loadLesson();
-        }
-
-        function toggleDarkMode() {
-            document.documentElement.classList.toggle('dark');
-            localStorage.setItem('ishark_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-            setTimeout(updateCaret, 200);
-        }
-
-        function toggleRevenge() {
-            isRevengeMode = !isRevengeMode;
-            document.getElementById('revenge-btn').classList.toggle('bg-red-500');
-            document.getElementById('revenge-btn').classList.toggle('text-white');
-            resetTest();
-        }
-
-        document.querySelectorAll('.time-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                document.querySelectorAll('.time-btn').forEach(b => b.className = "time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all");
-                e.target.className = "time-btn active px-4 py-2 rounded-lg text-xs font-bold bg-primary text-white shadow-md transition-all";
-                TIME_LIMIT = parseInt(e.target.dataset.time);
-                resetTest();
-            };
-        });
-
-        document.getElementById('logout-btn').onclick = async () => { await _supabase.auth.signOut(); window.location.href = 'login.html'; };
-        if (localStorage.getItem('ishark_theme') === 'dark') document.documentElement.classList.add('dark');
+    // ============================================================
+    //  RESET
+    // ============================================================
+    function resetTest() {
+        clearInterval(timerInterval); clearInterval(ghostInterval);
+        keystrokes = 0; errors = 0; streak = 0;
+        currentWordIdx = 0; currentLetterIdx = 0;
+        ghostWordIdx = 0; ghostLetterIdx = 0;
+        wpmHistory = []; errorHistory = [];
+        startTime = null; isTestFinished = false; timeRemaining = TIME_LIMIT;
+        document.getElementById('time-log').innerText = TIME_LIMIT;
+        document.getElementById('wpm-log').innerText = "0";
+        document.getElementById('accuracy-log').innerText = "100%";
+        document.getElementById('consistency-log').innerText = "0%";
+        document.getElementById('live-streak').innerText = "0";
+        document.body.classList.remove('is-typing','flow-state');
+        document.getElementById('modal-overlay').style.display = 'none';
+        if (!isRevengeMode) errorMap = {};
         loadLesson();
+    }
+
+    // ============================================================
+    //  UI CONTROLS
+    // ============================================================
+    function toggleDarkMode() {
+        document.documentElement.classList.toggle('dark');
+        localStorage.setItem('ishark_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        setTimeout(updateCaret, 200);
+    }
+
+    function toggleRevenge() {
+        isRevengeMode = !isRevengeMode;
+        const btn = document.getElementById('revenge-btn');
+        btn.classList.toggle('bg-red-500'); btn.classList.toggle('text-white');
+        resetTest();
+    }
+
+    document.querySelectorAll('.time-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            document.querySelectorAll('.time-btn').forEach(b => {
+                b.className = "time-btn px-4 py-2 rounded-lg text-xs font-bold border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all";
+            });
+            e.target.className = "time-btn active px-4 py-2 rounded-lg text-xs font-bold bg-primary text-white shadow-md transition-all";
+            TIME_LIMIT = parseInt(e.target.dataset.time);
+            resetTest();
+        };
+    });
+
+    document.getElementById('logout-btn').onclick = async () => { await _supabase.auth.signOut(); window.location.href = 'login.html'; };
+
+    // Init
+    updateSoundUI();
+    if (localStorage.getItem('ishark_theme') === 'dark') document.documentElement.classList.add('dark');
+    loadLesson();
     </script>
 </body>
 </html>

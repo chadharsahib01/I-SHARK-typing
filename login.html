@@ -26,6 +26,23 @@
     <style>
         .kinetic-gradient { background: linear-gradient(135deg, #00113a 0%, #002366 100%); }
         .ambient-shadow { box-shadow: 0 20px 40px rgba(0, 17, 58, 0.1); }
+
+        /* Tab switch animation */
+        .tab-panel { transition: opacity 0.25s ease, transform 0.25s ease; }
+        .tab-panel.hidden-panel { opacity: 0; transform: translateY(8px); pointer-events: none; position: absolute; width: 100%; }
+        .tab-panel.active-panel { opacity: 1; transform: translateY(0); pointer-events: all; }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+            border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Eye icon button */
+        .eye-btn { background: none; border: none; cursor: pointer; padding: 0; color: #545f72; }
+        .eye-btn:hover { color: #00113a; }
     </style>
 </head>
 <body class="bg-surface font-body min-h-screen flex items-center justify-center p-6">
@@ -36,21 +53,60 @@
         </div>
         
         <h1 class="font-headline font-black text-3xl text-primary mb-2">Pilot Access</h1>
-        <p class="text-xs font-bold text-secondary uppercase tracking-[0.2em] mb-10">I-SHARK Central Intelligence</p>
+        <p class="text-xs font-bold text-secondary uppercase tracking-[0.2em] mb-8">I-SHARK Central Intelligence</p>
 
-        <div class="space-y-4 mb-8">
-            <input id="email" type="email" placeholder="Pilot Email" class="w-full bg-surface-container-low border-none rounded-2xl p-5 text-sm focus:ring-2 focus:ring-primary transition-all outline-none">
-            <input id="password" type="password" placeholder="Access Key" class="w-full bg-surface-container-low border-none rounded-2xl p-5 text-sm focus:ring-2 focus:ring-primary transition-all outline-none">
+        <!-- Tab Toggle -->
+        <div class="flex bg-slate-100 rounded-2xl p-1 mb-8">
+            <button id="tab-login" onclick="switchTab('login')" class="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all bg-white text-primary shadow-sm">
+                Login
+            </button>
+            <button id="tab-signup" onclick="switchTab('signup')" class="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-secondary">
+                Create Account
+            </button>
         </div>
 
-        <div class="flex flex-col gap-4">
-            <button id="login-btn" class="w-full kinetic-gradient text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/10 active:scale-95 transition-all">Authenticate</button>
-            <button id="signup-btn" class="text-primary font-bold text-[10px] uppercase tracking-widest hover:underline opacity-60 hover:opacity-100 transition-opacity">Request New Pilot Credentials</button>
+        <!-- Forms container (relative for absolute positioning of panels) -->
+        <div class="relative" style="min-height: 210px;">
+
+            <!-- LOGIN PANEL -->
+            <div id="panel-login" class="tab-panel active-panel">
+                <div class="space-y-4 mb-6">
+                    <input id="login-email" type="email" placeholder="Pilot Email" class="w-full bg-surface-container-low border-none rounded-2xl p-5 text-sm focus:ring-2 focus:ring-primary transition-all outline-none">
+                    <div class="relative">
+                        <input id="login-password" type="password" placeholder="Access Key" class="w-full bg-surface-container-low border-none rounded-2xl p-5 text-sm focus:ring-2 focus:ring-primary transition-all outline-none pr-14">
+                        <button type="button" class="eye-btn absolute right-5 top-1/2 -translate-y-1/2" onclick="togglePw('login-password', this)">
+                            <span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 0">visibility</span>
+                        </button>
+                    </div>
+                </div>
+                <button id="login-btn" onclick="doLogin()" class="w-full kinetic-gradient text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/10 active:scale-95 transition-all mb-4">
+                    Authenticate
+                </button>
+                <button onclick="doForgotPassword()" class="text-primary font-bold text-[10px] uppercase tracking-widest hover:underline opacity-60 hover:opacity-100 transition-opacity">
+                    Forgot Access Key?
+                </button>
+            </div>
+
+            <!-- SIGNUP PANEL -->
+            <div id="panel-signup" class="tab-panel hidden-panel">
+                <div class="space-y-4 mb-6">
+                    <input id="signup-email" type="email" placeholder="Pilot Email" class="w-full bg-surface-container-low border-none rounded-2xl p-5 text-sm focus:ring-2 focus:ring-primary transition-all outline-none">
+                    <div class="relative">
+                        <input id="signup-password" type="password" placeholder="Access Key" class="w-full bg-surface-container-low border-none rounded-2xl p-5 text-sm focus:ring-2 focus:ring-primary transition-all outline-none pr-14">
+                        <button type="button" class="eye-btn absolute right-5 top-1/2 -translate-y-1/2" onclick="togglePw('signup-password', this)">
+                            <span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 0">visibility</span>
+                        </button>
+                    </div>
+                </div>
+                <button id="signup-btn" onclick="doSignup()" class="w-full kinetic-gradient text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/10 active:scale-95 transition-all">
+                    Request Pilot Credentials
+                </button>
+            </div>
         </div>
         
         <div id="status-msg" class="mt-6 text-[10px] font-bold uppercase tracking-widest hidden"></div>
 
-        <footer class="mt-12 pt-8 border-t border-slate-50">
+        <footer class="mt-10 pt-8 border-t border-slate-50">
             <p class="text-[8px] font-bold uppercase tracking-widest text-slate-400">
                 Engineered by Ali Raza Chadahar <br>
                 Director @ I-SHARK Institute
@@ -65,7 +121,7 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5Y3B2cHh5bWt4dmlkdG5lcG51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxODY2MDMsImV4cCI6MjA5Mjc2MjYwM30.V5PPXAyxXok-j8K4sRQqXWxWLv_F-oIObpgAxVCkbGI'
         );
 
-        const emailInp = document.getElementById('email'), passInp = document.getElementById('password'), statusMsg = document.getElementById('status-msg');
+        const statusMsg = document.getElementById('status-msg');
 
         function showStatus(text, isError = true) {
             statusMsg.innerText = text;
@@ -73,19 +129,85 @@
             statusMsg.classList.remove('hidden');
         }
 
-        document.getElementById('login-btn').onclick = async () => {
+        function switchTab(tab) {
+            const loginPanel = document.getElementById('panel-login');
+            const signupPanel = document.getElementById('panel-signup');
+            const tabLogin = document.getElementById('tab-login');
+            const tabSignup = document.getElementById('tab-signup');
             statusMsg.classList.add('hidden');
-            const { data, error } = await _supabase.auth.signInWithPassword({ email: emailInp.value, password: passInp.value });
-            if (error) return showStatus(error.message);
+
+            if (tab === 'login') {
+                loginPanel.classList.remove('hidden-panel'); loginPanel.classList.add('active-panel');
+                signupPanel.classList.remove('active-panel'); signupPanel.classList.add('hidden-panel');
+                tabLogin.className = 'flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all bg-white text-primary shadow-sm';
+                tabSignup.className = 'flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-secondary';
+            } else {
+                signupPanel.classList.remove('hidden-panel'); signupPanel.classList.add('active-panel');
+                loginPanel.classList.remove('active-panel'); loginPanel.classList.add('hidden-panel');
+                tabSignup.className = 'flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all bg-white text-primary shadow-sm';
+                tabLogin.className = 'flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-secondary';
+            }
+        }
+
+        function togglePw(inputId, btn) {
+            const inp = document.getElementById(inputId);
+            const icon = btn.querySelector('.material-symbols-outlined');
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                icon.innerText = 'visibility_off';
+            } else {
+                inp.type = 'password';
+                icon.innerText = 'visibility';
+            }
+        }
+
+        function setLoading(btnId, loading, defaultText) {
+            const btn = document.getElementById(btnId);
+            if (loading) {
+                btn.innerHTML = `<span class="spinner"></span> Authenticating...`;
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+            } else {
+                btn.innerHTML = defaultText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+        }
+
+        async function doLogin() {
+            statusMsg.classList.add('hidden');
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            if (!email || !password) return showStatus('Please fill in all fields.');
+            setLoading('login-btn', true, 'Authenticate');
+            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+            if (error) { setLoading('login-btn', false, 'Authenticate'); return showStatus(error.message); }
             showStatus("Access Granted. Redirecting...", false);
             setTimeout(() => window.location.href = 'index.html', 1000);
-        };
+        }
 
-        document.getElementById('signup-btn').onclick = async () => {
-            const { data, error } = await _supabase.auth.signUp({ email: emailInp.value, password: passInp.value });
+        async function doSignup() {
+            statusMsg.classList.add('hidden');
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            if (!email || !password) return showStatus('Please fill in all fields.');
+            if (password.length < 6) return showStatus('Access Key must be at least 6 characters.');
+            setLoading('signup-btn', true, 'Request Pilot Credentials');
+            const { data, error } = await _supabase.auth.signUp({ email, password });
+            setLoading('signup-btn', false, 'Request Pilot Credentials');
             if (error) return showStatus(error.message);
-            showStatus("Pilot Account Created. Please Authenticate.", false);
-        };
+            showStatus("Pilot Account Created. Check your email to confirm, then login.", false);
+        }
+
+        async function doForgotPassword() {
+            const email = document.getElementById('login-email').value.trim();
+            if (!email) return showStatus('Enter your Pilot Email above first.');
+            const { error } = await _supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/login.html'
+            });
+            if (error) return showStatus(error.message);
+            showStatus("Password reset email sent. Check your inbox.", false);
+        }
     </script>
 </body>
 </html>
