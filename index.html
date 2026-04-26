@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700" rel="stylesheet"/>
-    <!-- THE MARKETING ENGINE LIBRARY -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="icon" type="image/png" href="logo.png">
     <script id="tailwind-config">
@@ -88,7 +87,6 @@
 </head>
 <body class="bg-surface text-on-surface font-body overflow-x-hidden transition-colors duration-500">
 
-    <!-- HIDDEN ID CARD FOR CAPTURE -->
     <div id="pilot-id-template">
         <div class="flex justify-between items-start">
             <div>
@@ -213,7 +211,6 @@
         </div>
     </main>
 
-    <!-- MODAL OVERLAY UPDATED WITH SHARE BUTTON -->
     <div id="modal-overlay" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-md p-6">
         <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-12 text-center max-w-sm w-full shadow-2xl">
             <p id="rank-title" class="text-accent text-[10px] font-black uppercase tracking-[0.3em] mb-2">New Rank Unlocked</p>
@@ -230,7 +227,6 @@
                 </div>
             </div>
 
-            <!-- THE SHARE TRIGGER -->
             <button onclick="generatePilotID()" id="share-btn" class="w-full border-2 border-primary dark:border-white mb-3 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
                 <span class="material-symbols-outlined text-sm">share</span> Share with Friends
             </button>
@@ -242,8 +238,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const _supabase = supabase.createClient(
-            'https://atbjezjqjikloqgfvurz.supabase.co', 
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YmplempxamlrbG9xZ2Z2dXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODk4MDUsImV4cCI6MjA5MDQ2NTgwNX0.lj0Oumu8e63Q81bxvZ57-ALGaAP6IfIfCDBkqwXyvxM'
+            'https://eycpvpxymkxvidtnepnu.supabase.co', 
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5Y3B2cHh5bWt4dmlkdG5lcG51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxODY2MDMsImV4cCI6MjA5Mjc2MjYwM30.V5PPXAyxXok-j8K4sRQqXWxWLv_F-oIObpgAxVCkbGI'
         );
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
